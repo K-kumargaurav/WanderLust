@@ -42,9 +42,17 @@ app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
+const store = MongoStore.create({
+    mongoUrl : dbUrl,
+    crypto : {
+        secret : process.env.SECRET,
+    },
+    touchAfter : 24 * 3600,
+});
+
 // SESSION
 const sessionOptions = {
-    secret : "mysupersecretcode",
+    secret : process.env.SECRET,
     resave : false,
     saveUninitialized : true,
     coookie : {

@@ -13,18 +13,12 @@ const listingSchema = new Schema({
             required: true,
     },
     image: {
-        filename : {
-            type: String,
-            required : true,
-        },
-        url : {
-            type : String,
-            required : true,
-        },
+        url : String,
+        filename : String,
     },
     price: {
         type: Number,
-        minNumber: 799,
+        minNumber: 299,
     },
     location: {
         type: String,
@@ -44,6 +38,17 @@ const listingSchema = new Schema({
         type : Schema.Types.ObjectId,
         ref : "User"
     },   
+    geometry : {
+        type: {
+            type: String, // Don't do `{ location: { type: String } }`
+            enum: ['Point'], // 'location.type' must be 'Point'
+            required: true
+        },
+        coordinates: {
+            type: [Number],
+            required: true
+        }
+    },
 });
 
 listingSchema.post("findOneAndDelete", async (listing) => {
