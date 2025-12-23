@@ -7,9 +7,15 @@ const userSchema = new Schema({
         type : String,
         required : true,
     },
+    displayName : {
+        type :  String,
+        required : true,
+    },
 });
 
 // Implements username, hashing, salting, hashed password
-userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(passportLocalMongoose, {
+    usernameField : "email"
+});
 
 module.exports = mongoose.model('User', userSchema);
