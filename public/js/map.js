@@ -1,16 +1,23 @@
 mapboxgl.accessToken = mapToken;
 
 const map = new mapboxgl.Map({
-  container: "map", // container ID
-  center: listing.geometry.coordinates, // starting position [lng, lat]. Note that lat must be set between -90 and 90
-  zoom: 9, // starting zoom
+  container: 'map',
+  style: 'mapbox://styles/mapbox/light-v11',
+  center: listing.geometry.coordinates,
+  zoom: 9,
 });
 
-const marker = new mapboxgl.Marker({ color: "red" })
-  .setLngLat(listing.geometry.coordinates) //listing.geometry.coordinates
+map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+
+new mapboxgl.Marker({ color: '#C0602A' })
+  .setLngLat(listing.geometry.coordinates)
   .setPopup(
-    new mapboxgl.Popup({ offset: 25 }).setHTML(
-      `<h6>${listing.title}</h6><p>Exact location provided after booking!</p>`,
-    ),
+    new mapboxgl.Popup({ offset: 25, closeButton: false })
+      .setHTML(
+        `<div style="font-family:'DM Sans',sans-serif;padding:4px 2px">
+          <strong style="font-size:0.875rem">${listing.title}</strong><br>
+          <span style="font-size:0.78rem;color:#888">Exact address shared after booking</span>
+        </div>`
+      )
   )
   .addTo(map);

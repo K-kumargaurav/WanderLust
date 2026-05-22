@@ -1,32 +1,51 @@
 <% layout("/layouts/boilerplate") %>
 
-<div class="row mt-3">
-  <h1 class="col-6 offset-3">Login to WanderLust</h1>
-  <div class="col-6 offset-3">
-    <form action="/login" method="POST" class="needs-validation" novalidate>
-      <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input
-          id="email"
-          type="email"
-          name="email"
-          placeholder="Enter email address"
-          class="form-control"
-          required
-        />
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card-header">
+      <div class="auth-logo">
+        <i class="fa-regular fa-compass"></i>
       </div>
-      <div class="mb-3">
+      <h1 class="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Log in to continue your journey</p>
+    </div>
+
+    <form action="/login" method="POST" class="needs-validation" novalidate>
+      <div class="form-group">
+        <label for="username" class="form-label">Username</label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          class="form-control"
+          placeholder="Your username"
+          required
+          autocomplete="username"
+        />
+        <div class="invalid-feedback">Username is required.</div>
+      </div>
+
+      <div class="form-group">
         <label for="password" class="form-label">Password</label>
         <input
           id="password"
           type="password"
           name="password"
-          placeholder="Enter password"
           class="form-control"
+          placeholder="Your password"
           required
+          autocomplete="current-password"
         />
+        <div class="invalid-feedback">Password is required.</div>
       </div>
-      <button class="btn btn-success">Login</button>
+
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.5rem">
+        Log In
+      </button>
     </form>
+
+    <p class="auth-footer-text">
+      Don't have an account? <a href="/signup">Sign up</a>
+    </p>
   </div>
 </div>
