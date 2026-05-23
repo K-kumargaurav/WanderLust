@@ -2,6 +2,8 @@
 
 <div class="auth-page">
   <div class="auth-card">
+
+    <!-- Header -->
     <div class="auth-card-header">
       <div class="auth-logo">
         <i class="fa-regular fa-compass"></i>
@@ -10,43 +12,129 @@
       <p class="auth-subtitle">Join thousands of travellers on WanderLust</p>
     </div>
 
-    <form action="/signup" method="POST" class="needs-validation" novalidate>
+    <!--
+      name="email"    → matches usernameField: "email" in passport-local-mongoose
+      name="password" → standard passport-local field
+    -->
+    <form
+      action="/signup"
+      method="POST"
+      class="needs-validation"
+      novalidate
+    >
+      <!-- Email -->
       <div class="form-group">
-        <label for="email" class="form-label">Email</label>
+        <label for="signup-email" class="form-label">Email</label>
         <input
-          id="email"
+          id="signup-email"
           type="email"
           name="email"
           class="form-control"
           placeholder="you@example.com"
           required
           autocomplete="email"
+          inputmode="email"
         />
-        <div class="invalid-feedback">Please enter a valid email.</div>
+        <div class="invalid-feedback">Please enter a valid email address.</div>
       </div>
 
+      <!-- Password -->
       <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <input
-          id="password"
-          type="password"
-          name="password"
-          class="form-control"
-          placeholder="Min. 8 characters"
-          required
-          minlength="8"
-          autocomplete="new-password"
-        />
+        <label for="signup-password" class="form-label">Password</label>
+        <div style="position:relative">
+          <input
+            id="signup-password"
+            type="password"
+            name="password"
+            class="form-control"
+            placeholder="At least 8 characters"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            style="padding-right:2.75rem"
+          />
+          <!-- Toggle password visibility -->
+          <button
+            type="button"
+            aria-label="Toggle password visibility"
+            style="
+              position:absolute;right:0.9rem;top:50%;
+              transform:translateY(-50%);
+              background:none;border:none;cursor:pointer;
+              color:var(--sand);font-size:0.9rem;padding:0;line-height:1
+            "
+            onclick="
+              const inp = document.getElementById('signup-password');
+              const str = document.getElementById('pwd-strength');
+              inp.type = inp.type === 'password' ? 'text' : 'password';
+              this.querySelector('i').classList.toggle('fa-eye');
+              this.querySelector('i').classList.toggle('fa-eye-slash');
+            "
+          >
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
         <div class="invalid-feedback">Password must be at least 8 characters.</div>
+
+        <!-- Password strength indicator -->
+        <div id="pwd-strength" style="margin-top:0.4rem;display:flex;gap:4px;height:3px">
+          <div class="pwd-bar" style="flex:1;border-radius:999px;background:var(--charcoal-20);transition:background 0.2s"></div>
+          <div class="pwd-bar" style="flex:1;border-radius:999px;background:var(--charcoal-20);transition:background 0.2s"></div>
+          <div class="pwd-bar" style="flex:1;border-radius:999px;background:var(--charcoal-20);transition:background 0.2s"></div>
+          <div class="pwd-bar" style="flex:1;border-radius:999px;background:var(--charcoal-20);transition:background 0.2s"></div>
+        </div>
+        <p id="pwd-strength-label" style="font-size:0.72rem;color:var(--sand);margin-top:0.25rem;min-height:1em"></p>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.5rem">
-        Create Account
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.75rem">
+        <i class="fa-solid fa-user-plus"></i>&nbsp; Create Account
       </button>
     </form>
 
-    <p class="auth-footer-text">
+    <p class="auth-footer-text" style="margin-top:1.25rem">
       Already have an account? <a href="/login">Log in</a>
     </p>
+
   </div>
 </div>
+
+<script>
+(function () {
+  const input  = document.getElementById("signup-password");
+  const bars   = document.querySelectorAll(".pwd-bar");
+  const label  = document.getElementById("pwd-strength-label");
+
+  const levels = [
+    { color: "#c0392b", text: "Weak"      },
+    { color: "#e67e22", text: "Fair"      },
+    { color: "#f1c40f", text: "Good"      },
+    { color: "#1D6F3A", text: "Strong"    },
+  ];
+
+  function score(pwd) {
+    let s = 0;
+    if (pwd.length >= 8)                      s++;
+    if (pwd.length >= 12)                     s++;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++;
+    if (/[0-9]/.test(pwd))                    s++;
+    if (/[^A-Za-z0-9]/.test(pwd))            s++;
+    // Clamp to 4 levels
+    return Math.min(Math.floor(s / 1.25), 3);
+  }
+
+  input.addEventListener("input", () => {
+    const pwd = input.value;
+    if (!pwd) {
+      bars.forEach(b => (b.style.background = "var(--charcoal-20)"));
+      label.textContent = "";
+      return;
+    }
+    const lvl = score(pwd);
+    bars.forEach((b, i) => {
+      b.style.background = i <= lvl ? levels[lvl].color : "var(--charcoal-20)";
+    });
+    label.textContent  = levels[lvl].text;
+    label.style.color  = levels[lvl].color;
+  });
+})();
+</script>

@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const { LISTING_CATEGORIES } = require("./models/listing");
 
 module.exports.listingSchema = Joi.object({
     listing: Joi.object({
@@ -10,6 +11,7 @@ module.exports.listingSchema = Joi.object({
         // image is optional here because multer handles it separately;
         // when present (e.g. edit form sending the existing URL) it must be a URI.
         image:       Joi.string().uri().allow("", null).optional(),
+        category:    Joi.string().valid(...LISTING_CATEGORIES).allow("", null).optional(),
     }).required(),
 });
 

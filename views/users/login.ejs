@@ -2,6 +2,8 @@
 
 <div class="auth-page">
   <div class="auth-card">
+
+    <!-- Header -->
     <div class="auth-card-header">
       <div class="auth-logo">
         <i class="fa-regular fa-compass"></i>
@@ -10,42 +12,79 @@
       <p class="auth-subtitle">Log in to continue your journey</p>
     </div>
 
-    <form action="/login" method="POST" class="needs-validation" novalidate>
+    <!--
+      name="email"    → matches usernameField: "email" in passport-local-mongoose
+      name="password" → standard passport-local field
+      autocomplete    → assists password managers
+    -->
+    <form
+      action="/login"
+      method="POST"
+      class="needs-validation"
+      novalidate
+    >
+      <!-- Email -->
       <div class="form-group">
-        <label for="email" class="form-label">Email</label>
+        <label for="login-email" class="form-label">Email</label>
         <input
-          id="email"
+          id="login-email"
           type="email"
-          name="email"
+          name="username"
           class="form-control"
           placeholder="you@example.com"
           required
           autocomplete="email"
+          inputmode="email"
         />
-        <div class="invalid-feedback">Please enter a valid email.</div>
+        <div class="invalid-feedback">Please enter a valid email address.</div>
       </div>
 
+      <!-- Password -->
       <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <input
-          id="password"
-          type="password"
-          name="password"
-          class="form-control"
-          placeholder="Your password"
-          required
-          autocomplete="current-password"
-        />
+        <label for="login-password" class="form-label">Password</label>
+        <div style="position:relative">
+          <input
+            id="login-password"
+            type="password"
+            name="password"
+            class="form-control"
+            placeholder="Your password"
+            required
+            autocomplete="current-password"
+            style="padding-right:2.75rem"
+          />
+          <!-- Toggle password visibility -->
+          <button
+            type="button"
+            class="pwd-toggle"
+            aria-label="Toggle password visibility"
+            style="
+              position:absolute;right:0.9rem;top:50%;
+              transform:translateY(-50%);
+              background:none;border:none;cursor:pointer;
+              color:var(--sand);font-size:0.9rem;padding:0;line-height:1
+            "
+            onclick="
+              const inp = document.getElementById('login-password');
+              inp.type = inp.type === 'password' ? 'text' : 'password';
+              this.querySelector('i').classList.toggle('fa-eye');
+              this.querySelector('i').classList.toggle('fa-eye-slash');
+            "
+          >
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
         <div class="invalid-feedback">Password is required.</div>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.5rem">
-        Log In
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:0.75rem">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i>&nbsp; Log In
       </button>
     </form>
 
-    <p class="auth-footer-text">
+    <p class="auth-footer-text" style="margin-top:1.25rem">
       Don't have an account? <a href="/signup">Sign up</a>
     </p>
+
   </div>
 </div>

@@ -24,13 +24,10 @@ const _mongoStore  = require("connect-mongo");
 const MongoStore   = _mongoStore.default || _mongoStore;
 const flash        = require("connect-flash");
 const passport     = require("passport");
-const _passportLocal = require("passport-local");
-const LocalStrategy  = _passportLocal.default || _passportLocal;
 const User         = require("./models/user.js");
 
 // ─── Security middleware ─────────────────────────────────────────────────────
 const helmet      = require("helmet");
-const rateLimit   = require("express-rate-limit");
 
 const listingRouter = require("./route/listing.js");
 const reviewRouter  = require("./route/review.js");
@@ -125,7 +122,6 @@ const sessionOptions = {
     resave:            false,
     saveUninitialized: false,
     cookie: {
-        expires:  Date.now() + 7 * 24 * 60 * 60 * 1000,
         maxAge:   7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         // Only send the cookie over HTTPS in production
@@ -140,7 +136,7 @@ app.use(flash());
 // ─── PASSPORT ─────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 app.use(passport.session());
-passport.use(new LocalStrategy(User.authenticate()));
+passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -148,17 +144,10 @@ passport.deserializeUser(User.deserializeUser());
 app.use((req, res, next) => {
     res.locals.success  = req.flash("success");
     res.locals.error    = req.flash("error");
-    res.locals.currUser = req.user;
+    
+    res.locals.mapToken = process.env.MAP_TOKEN;
+res.locals.currUser = req.user;
     next();
-});
-
-// ─── RATE LIMITING ────────────────────────────────────────────────────────────
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max:      20,
-    message:  "Too many login attempts — please try again in 15 minutes.",
-    standardHeaders: true,
-    legacyHeaders:   false,
 });
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
@@ -166,7 +155,7 @@ app.get("/", (req, res) => res.redirect("/listings"));
 
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
-app.use("/", authLimiter, userRouter); // rate-limit the entire user/auth router
+app.use("/", userRouter);
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.all(/(.*)/, (req, res, next) => {

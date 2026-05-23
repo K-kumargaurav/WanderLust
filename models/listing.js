@@ -7,15 +7,17 @@ const Review = require("./review");
  * and the category select in new/edit forms.
  */
 const LISTING_CATEGORIES = [
-    "rooms",
-    "cities",
-    "mountains",
-    "castles",
-    "pools",
-    "camping",
-    "farms",
-    "arctic",
-    "beach",
+    "Rooms",
+    "Iconic Cities",
+    "Mountains",
+    "Castles",
+    "Amazing Pools",
+    "Camping",
+    "Farms",
+    "Arctic",
+    "Domes",
+    "Boats",
+    "Beach",
 ];
 
 const listingSchema = new Schema({

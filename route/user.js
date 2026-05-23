@@ -1,42 +1,64 @@
-const express    = require("express");
-const router     = express.Router();
-const wrapAsync  = require("../utils/wrapAsync");
-const passport   = require("passport");
+"use strict";
+
+const express = require("express");
+const router = express.Router();
+const passport = require("passport");
+const wrapAsync = require("../utils/wrapAsync");
 const { saveRedirectUrl } = require("../middleware");
-const userController      = require("../Controllers/user");
+const userController = require("../Controllers/user");
+
+const rateLimit = require("express-rate-limit");
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,              // tighter — 10 attempts per 15 min per IP
+    message: "Too many login attempts — please try again in 15 minutes.",
+    standardHeaders: true,
+    legacyHeaders: false,
+    skipSuccessfulRequests: true, // don't count successful logins against the limit
+});
 
 // ─── SIGNUP ───────────────────────────────────────────────────────────────────
 router
     .route("/signup")
     .get(userController.renderSignupForm)
-    .post(wrapAsync(userController.signup));
+    .post(authLimiter, saveRedirectUrl, wrapAsync(userController.signup));
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-
 router
     .route("/login")
     .get(userController.renderLoginForm)
-    .post(saveRedirectUrl, (req, res, next) => {
-        passport.authenticate("local", (err, user, info) => {
-            // Hard error from the strategy (DB down, etc.)
-            if (err) return next(err);
+    .post(
+        authLimiter,
 
-            // Authentication failed — info.message comes from passport-local-mongoose
-            if (!user) {
-                req.flash("error", info?.message || "Invalid username or password.");
-                return res.redirect("/login");
+        (req, res, next) => {
+            if (req.body.username) {
+                req.body.username =
+                    req.body.username.trim().toLowerCase();
             }
 
-            // Authentication succeeded — log the user in and establish the session
-            req.logIn(user, (loginErr) => {
-                if (loginErr) return next(loginErr);
+            next();
+        },
 
-                req.flash("success", "Welcome back to WanderLust!");
-                const redirectUrl = res.locals.redirectUrl || "/listings";
-                return res.redirect(redirectUrl);
-            });
-        })(req, res, next); // immediately invoke — passport returns a middleware fn
-    });
+        passport.authenticate("local", {
+            failureRedirect: "/login",
+            failureFlash: true,
+        }),
+
+        (req, res) => {
+            req.flash(
+                "success",
+                "Welcome back to WanderLust!"
+            );
+
+            const redirectUrl =
+                req.session.redirectUrl || "/listings";
+
+            delete req.session.redirectUrl;
+
+            res.redirect(redirectUrl);
+        }
+    );
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
 router.get("/logout", userController.logout);

@@ -12,6 +12,14 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "WanderLust_DEV",
     allowedFormats: ["png", "jpg", "jpeg"],
+
+        transformation: [
+            {
+                width: 2000,
+                crop: "limit",
+                quality: "auto",
+            },
+        ],
   },
 });
 

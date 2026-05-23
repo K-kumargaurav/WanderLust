@@ -1,48 +1,99 @@
-<nav class="wl-nav">
-  <div class="inner">
-    <a href="/listings" class="wl-brand">
-      <div class="wl-brand-icon">
-        <i class="fa-regular fa-compass"></i>
+<%- include("../includes/navbar") %>
+
+<div class="row mt-4">
+  <div class="col-8 offset-2">
+    <h3>Edit Listing</h3>
+
+    <form
+      method="POST"
+      action="/listings/<%= listing._id %>?_method=PUT"
+      enctype="multipart/form-data"
+      class="needs-validation"
+      novalidate
+    >
+      <div class="mb-3">
+        <label class="form-label">Title</label>
+
+        <input
+          type="text"
+          name="listing[title]"
+          class="form-control"
+          value="<%= listing.title %>"
+          required
+        />
       </div>
-      <span class="wl-brand-name">WanderLust</span>
-    </a>
 
-    <%
-      /**
-       * currentFilter and searchQuery are always present via res.locals defaults
-       * set in app.js, so no typeof guard is needed here.
-       */
-    %>
-    <form class="wl-search" action="/listings" method="GET" role="search">
-      <%-- Preserve the active category filter across searches --%>
-      <% if (currentFilter && currentFilter !== "trending") { %>
-        <input type="hidden" name="filter" value="<%= currentFilter %>" />
-      <% } %>
-      <i class="fa-solid fa-magnifying-glass wl-search-icon"></i>
-      <input
-        type="search"
-        name="q"
-        placeholder="Search destinations…"
-        autocomplete="off"
-        value="<%= searchQuery %>"
-        aria-label="Search listings"
-      />
-      <button type="submit" class="wl-search-btn">Search</button>
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+
+        <textarea
+          name="listing[description]"
+          class="form-control"
+          required
+        ><%= listing.description %></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Current Image</label>
+
+        <br />
+
+        <img
+          src="<%= originalImageUrl %>"
+          style="height: 220px"
+          class="rounded"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Upload New Image</label>
+
+        <input
+          type="file"
+          name="listing[image]"
+          class="form-control"
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Price</label>
+
+        <input
+          type="number"
+          name="listing[price]"
+          class="form-control"
+          value="<%= listing.price %>"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Location</label>
+
+        <input
+          type="text"
+          name="listing[location]"
+          class="form-control"
+          value="<%= listing.location %>"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Country</label>
+
+        <input
+          type="text"
+          name="listing[country]"
+          class="form-control"
+          value="<%= listing.country %>"
+          required
+        />
+      </div>
+
+      <button class="btn btn-dark">
+        Update Listing
+      </button>
     </form>
-
-    <button class="wl-nav-toggle" id="wl-nav-toggle" aria-label="Menu">
-      <i class="fa-solid fa-bars"></i>
-    </button>
-
-    <div class="wl-nav-links" id="wl-nav-links">
-      <a href="/listings" class="wl-nav-link">Explore</a>
-      <% if (!currUser) { %>
-        <a href="/signup" class="wl-nav-btn outline">Sign Up</a>
-        <a href="/login"  class="wl-nav-btn">Log In</a>
-      <% } else { %>
-        <a href="/listings/new" class="wl-nav-link">Add Listing</a>
-        <a href="/logout" class="wl-nav-btn outline">Log Out</a>
-      <% } %>
-    </div>
   </div>
-</nav>
+</div>

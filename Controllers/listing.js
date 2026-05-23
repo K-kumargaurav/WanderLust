@@ -1,4 +1,5 @@
 const Listing = require("../models/listing");
+const { LISTING_CATEGORIES } = require("../models/listing");
 const expressErr = require("../utils/expressErr");
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
 
@@ -25,7 +26,8 @@ module.exports.index = async (req, res) => {
 
     let dbQuery = {};
     if (searchQuery) {
-        const regex = new RegExp(searchQuery, "i");
+        const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(escaped, "i");
         dbQuery = { $or: [{ title: regex }, { location: regex }, { country: regex }] };
     } else {
         const activeFilter = FILTERS.find((f) => f.slug === currentFilter);
@@ -38,7 +40,9 @@ module.exports.index = async (req, res) => {
 
 // ─── NEW FORM ─────────────────────────────────────────────────────────────────
 module.exports.renderNewForm = (req, res) => {
-    res.render("listings/new.ejs");
+    res.render("listings/new", {
+        categories: LISTING_CATEGORIES,
+    });
 };
 
 // ─── SHOW ─────────────────────────────────────────────────────────────────────
@@ -110,11 +114,23 @@ module.exports.updateListing = async (req, res) => {
         return res.redirect("/listings");
     }
 
+    // Re-geocode if the location was changed
+    if (req.body.listing.location && req.body.listing.location !== listing.location) {
+        const geoResponse = await geocodingClient
+            .forwardGeocode({ query: req.body.listing.location, limit: 1 })
+            .send();
+        const features = geoResponse.body.features;
+        if (features && features.length > 0) {
+            listing.geometry = features[0].geometry;
+        }
+    }
+
     // Only replace the image when a new file was actually uploaded
     if (req.file) {
         listing.image = { url: req.file.path, filename: req.file.filename };
-        await listing.save();
     }
+
+    await listing.save();
 
     req.flash("success", "Listing updated!");
     return res.redirect(`/listings/${id}`);
