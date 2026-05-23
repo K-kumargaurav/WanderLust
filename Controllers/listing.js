@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Listing = require("../models/listing");
 const { LISTING_CATEGORIES } = require("../models/listing");
 const expressErr = require("../utils/expressErr");
@@ -84,6 +85,10 @@ module.exports.renderNewForm = (req, res) => {
 // ─── SHOW ─────────────────────────────────────────────────────────────────────
 module.exports.showListing = async (req, res) => {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        req.flash("error", "Invalid listing ID.");
+        return res.redirect("/listings");
+    }
     const listing = await Listing.findById(id)
         .populate({ path: "reviews", populate: "author" })
         .populate("owner");
@@ -103,9 +108,15 @@ module.exports.createListing = async (req, res, next) => {
         return res.redirect("/listings/new");
     }
 
-    const geoResponse = await geocodingClient
-        .forwardGeocode({ query: req.body.listing.location, limit: 1 })
-        .send();
+    let geoResponse;
+    try {
+        geoResponse = await geocodingClient
+            .forwardGeocode({ query: req.body.listing.location, limit: 1 })
+            .send();
+    } catch (err) {
+        req.flash("error", "Could not geocode that location. Please try again.");
+        return res.redirect("/listings/new");
+    }
 
     const features = geoResponse.body.features;
     if (!features || features.length === 0) {
@@ -126,6 +137,10 @@ module.exports.createListing = async (req, res, next) => {
 // ─── EDIT FORM ────────────────────────────────────────────────────────────────
 module.exports.renderEditForm = async (req, res) => {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        req.flash("error", "Invalid listing ID.");
+        return res.redirect("/listings");
+    }
     const listing = await Listing.findById(id);
 
     if (!listing) {
@@ -139,7 +154,17 @@ module.exports.renderEditForm = async (req, res) => {
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
 module.exports.updateListing = async (req, res) => {
     const { id } = req.params;
-    const listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        req.flash("error", "Invalid listing ID.");
+        return res.redirect("/listings");
+    }
+
+    const { title, description, location, country, price, category } = req.body.listing;
+    const listing = await Listing.findByIdAndUpdate(
+        id,
+        { title, description, location, country, price, category },
+        { new: true, runValidators: true }
+    );
 
     if (!listing) {
         req.flash("error", "Listing does not exist!");
@@ -147,13 +172,17 @@ module.exports.updateListing = async (req, res) => {
     }
 
     // Re-geocode if the location was changed
-    if (req.body.listing.location && req.body.listing.location !== listing.location) {
-        const geoResponse = await geocodingClient
-            .forwardGeocode({ query: req.body.listing.location, limit: 1 })
-            .send();
-        const features = geoResponse.body.features;
-        if (features && features.length > 0) {
-            listing.geometry = features[0].geometry;
+    if (location) {
+        try {
+            const geoResponse = await geocodingClient
+                .forwardGeocode({ query: location, limit: 1 })
+                .send();
+            const features = geoResponse.body.features;
+            if (features && features.length > 0) {
+                listing.geometry = features[0].geometry;
+            }
+        } catch (err) {
+            // Keep existing geometry if geocoding fails
         }
     }
 
@@ -190,6 +219,10 @@ module.exports.updateListing = async (req, res) => {
 // ─── DELETE ───────────────────────────────────────────────────────────────────
 module.exports.destroyListing = async (req, res) => {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        req.flash("error", "Invalid listing ID.");
+        return res.redirect("/listings");
+    }
     const listing = await Listing.findById(id);
 
     if (listing) {

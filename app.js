@@ -25,6 +25,8 @@ const MongoStore   = _mongoStore.default || _mongoStore;
 const flash        = require("connect-flash");
 const passport     = require("passport");
 const User         = require("./models/user.js");
+const compression  = require("compression");
+const morgan       = require("morgan");
 
 // ─── Security middleware ─────────────────────────────────────────────────────
 const helmet      = require("helmet");
@@ -35,6 +37,9 @@ const reviewRouter  = require("./route/review.js");
 const userRouter    = require("./route/user.js");
 
 const dbUrl = process.env.MONGO_URL;
+
+// ─── TRUST PROXY (Render reverse proxy) ──────────────────────────────────────
+app.set("trust proxy", 1);
 
 // ─── DB CONNECTION ────────────────────────────────────────────────────────────
 main()
@@ -53,11 +58,17 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.engine("ejs", ejsMate);
 
+// ─── COMPRESSION & LOGGING ────────────────────────────────────────────────────
+app.use(compression());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+
 // ─── BODY PARSING ─────────────────────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(express.json({ limit: "1mb" }));
 app.use(methodOverride("_method"));
-app.use(express.static(path.join(__dirname, "/public")));
+app.use(express.static(path.join(__dirname, "/public"), {
+    maxAge: process.env.NODE_ENV === "production" ? "7d" : 0,
+}));
 
 // ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
 app.use(
@@ -167,6 +178,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// ─── HEALTH CHECK (for Render monitoring) ────────────────────────────────────
+app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => res.redirect("/listings"));
 
@@ -190,6 +204,20 @@ app.use((err, req, res, next) => {
 
 // ─── SERVER ───────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+// ─── GRACEFUL SHUTDOWN (Render sends SIGTERM) ────────────────────────────────
+function shutdown(signal) {
+    console.log(`\n${signal} received — shutting down gracefully...`);
+    server.close(() => {
+        mongoose.connection.close(false).then(() => {
+            console.log("DB connection closed.");
+            process.exit(0);
+        });
+    });
+    setTimeout(() => process.exit(1), 10000);
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT",  () => shutdown("SIGINT"));

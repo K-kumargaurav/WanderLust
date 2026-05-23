@@ -79,6 +79,13 @@ const listingSchema = new Schema({
     },
 });
 
+// ─── Indexes ─────────────────────────────────────────────────────────────────
+listingSchema.index({ title: "text", location: "text", country: "text" });
+listingSchema.index({ owner: 1 });
+listingSchema.index({ createdAt: -1 });
+listingSchema.index({ category: 1 });
+listingSchema.index({ price: 1 });
+
 // Virtual: backward-compat getter for single image access
 listingSchema.virtual("image").get(function () {
     return this.images && this.images.length > 0 ? this.images[0] : null;

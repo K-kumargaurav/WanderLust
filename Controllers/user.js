@@ -29,7 +29,8 @@ async function sendResetEmail(email, token, host) {
         },
     });
 
-    const resetUrl = `http://${host}/reset/${token}`;
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const resetUrl = `${protocol}://${host}/reset/${token}`;
 
     await transporter.sendMail({
         from: `"WanderLust" <${process.env.SMTP_USER || "noreply@wanderlust.com"}>`,
