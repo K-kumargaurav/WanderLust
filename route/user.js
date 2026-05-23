@@ -31,6 +31,7 @@ router
     .post(
         authLimiter,
         validateCsrf,
+        saveRedirectUrl,
 
         (req, res, next) => {
             if (req.body.username) {
@@ -39,16 +40,20 @@ router
             next();
         },
 
-        passport.authenticate("local", {
-            failureRedirect: "/login",
-            failureFlash: true,
-        }),
-
-        (req, res) => {
-            req.flash("success", "Welcome back to WanderLust!");
-            const redirectUrl = req.session.redirectUrl || "/listings";
-            delete req.session.redirectUrl;
-            res.redirect(redirectUrl);
+        (req, res, next) => {
+            passport.authenticate("local", (err, user, info) => {
+                if (err) return next(err);
+                if (!user) {
+                    req.flash("error", (info && info.message) || "Incorrect email or password.");
+                    return res.redirect("/login");
+                }
+                req.login(user, (loginErr) => {
+                    if (loginErr) return next(loginErr);
+                    req.flash("success", "Welcome back to WanderLust!");
+                    const redirectUrl = res.locals.redirectUrl || "/listings";
+                    res.redirect(redirectUrl);
+                });
+            })(req, res, next);
         }
     );
 

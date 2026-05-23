@@ -52,18 +52,13 @@
           />
           <button
             type="button"
+            class="pwd-toggle"
             aria-label="Toggle password visibility"
             style="
               position:absolute;right:0.9rem;top:50%;
               transform:translateY(-50%);
               background:none;border:none;cursor:pointer;
               color:var(--sand);font-size:0.9rem;padding:0;line-height:1
-            "
-            onclick="
-              const inp = document.getElementById('signup-password');
-              inp.type = inp.type === 'password' ? 'text' : 'password';
-              this.querySelector('i').classList.toggle('fa-eye');
-              this.querySelector('i').classList.toggle('fa-eye-slash');
             "
           >
             <i class="fa-solid fa-eye"></i>

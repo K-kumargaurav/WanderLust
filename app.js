@@ -134,7 +134,24 @@ app.use(flash());
 // ─── PASSPORT ─────────────────────────────────────────────────────────────────
 app.use(passport.initialize());
 app.use(passport.session());
-passport.use(User.createStrategy());
+
+// passport-local-mongoose v9 returns an async verify function, but
+// passport-local expects a callback-based one.  Bridge the two.
+const LocalStrategy = require("passport-local");
+const asyncVerify   = User.authenticate();          // async (username, password) => { ... }
+passport.use(new LocalStrategy(
+    (username, password, done) => {
+        asyncVerify(username, password)
+            .then((result) => {
+                if (!result.user) {
+                    return done(null, false, result.error);
+                }
+                done(null, result.user);
+            })
+            .catch(done);
+    }
+));
+
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 

@@ -51,6 +51,60 @@ document.querySelectorAll('.filter-item').forEach(item => {
   });
 });
 
+// ─── Password Toggle ──────────────────────────────────────────────────────
+document.querySelectorAll('.pwd-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const inp = btn.closest('div').querySelector('input[type="password"], input[type="text"]');
+    if (!inp) return;
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    const icon = btn.querySelector('i');
+    icon.classList.toggle('fa-eye');
+    icon.classList.toggle('fa-eye-slash');
+  });
+});
+
+// ─── Sort Select ──────────────────────────────────────────────────────────
+const sortSelect = document.getElementById('sortSelect');
+if (sortSelect) {
+  sortSelect.addEventListener('change', () => {
+    window.location.href = sortSelect.value;
+  });
+}
+
+// ─── Gallery Thumbnails ───────────────────────────────────────────────────
+document.querySelectorAll('.gallery-thumb').forEach(thumb => {
+  thumb.addEventListener('click', () => {
+    const mainImg = document.getElementById('gallery-main-img');
+    if (mainImg) mainImg.src = thumb.src;
+    document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+    thumb.classList.add('active');
+  });
+});
+
+// ─── Review Edit Toggle ──────────────────────────────────────────────────
+function toggleEditReview(id) {
+  const form = document.getElementById('edit-form-' + id);
+  const comment = document.getElementById('comment-' + id);
+  const stars = document.getElementById('stars-' + id);
+  if (!form) return;
+  if (form.style.display === 'none') {
+    form.style.display = 'block';
+    comment.style.display = 'none';
+    stars.style.display = 'none';
+  } else {
+    form.style.display = 'none';
+    comment.style.display = 'block';
+    stars.style.display = 'inline-flex';
+  }
+}
+
+document.querySelectorAll('.review-edit-btn, .review-cancel-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const reviewId = btn.dataset.reviewId;
+    if (reviewId) toggleEditReview(reviewId);
+  });
+});
+
 // ─── Image Upload Preview ──────────────────────────────────────────────────
 const imageInput = document.getElementById('images');
 const previewContainer = document.getElementById('imagePreviewContainer');

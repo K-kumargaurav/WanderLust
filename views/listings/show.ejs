@@ -38,7 +38,6 @@
             src="<%= img.url %>"
             alt="Photo <%= i + 1 %>"
             class="gallery-thumb <%= i === 0 ? 'active' : '' %>"
-            onclick="document.getElementById('gallery-main-img').src=this.src; document.querySelectorAll('.gallery-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');"
           />
         <% }) %>
       </div>
@@ -172,7 +171,7 @@
               <!-- Review actions (only for review author) -->
               <% if(currUser && review.author && currUser._id.equals(review.author._id)) { %>
                 <div class="review-actions">
-                  <button class="review-edit-btn" title="Edit review" onclick="toggleEditReview('<%= review._id %>')">
+                  <button class="review-edit-btn" title="Edit review" data-review-id="<%= review._id %>">
                     <i class="fa-solid fa-pen"></i>
                   </button>
                   <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="display:inline">
@@ -221,7 +220,7 @@
                   </div>
                   <div style="display:flex;gap:0.5rem">
                     <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                    <button type="button" class="btn btn-outline btn-sm" onclick="toggleEditReview('<%= review._id %>')">Cancel</button>
+                    <button type="button" class="btn btn-outline btn-sm review-cancel-btn" data-review-id="<%= review._id %>">Cancel</button>
                   </div>
                 </form>
               <% } %>
@@ -271,22 +270,5 @@
 
   </div>
 </div>
-
-<script>
-function toggleEditReview(id) {
-  const form = document.getElementById('edit-form-' + id);
-  const comment = document.getElementById('comment-' + id);
-  const stars = document.getElementById('stars-' + id);
-  if (form.style.display === 'none') {
-    form.style.display = 'block';
-    comment.style.display = 'none';
-    stars.style.display = 'none';
-  } else {
-    form.style.display = 'none';
-    comment.style.display = 'block';
-    stars.style.display = 'inline-flex';
-  }
-}
-</script>
 
 <script src="/js/map.js"></script>
