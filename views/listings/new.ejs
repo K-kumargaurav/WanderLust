@@ -56,7 +56,7 @@
           accept="image/png, image/jpeg, image/jpg"
         />
         <p style="font-size:0.75rem;color:var(--sand);margin-top:0.3rem">
-          Accepted: JPG, JPEG, PNG &mdash; max 10MB
+          Accepted: JPG, JPEG, PNG &mdash; max 10 MB
         </p>
       </div>
 
@@ -101,6 +101,17 @@
           required
         />
         <div class="invalid-feedback">Location is required.</div>
+      </div>
+
+      <!-- Category -->
+      <div class="form-group">
+        <label for="category" class="form-label">Category <span style="color:var(--sand);font-weight:400;text-transform:none">(optional)</span></label>
+        <select id="category" name="listing[category]" class="form-control">
+          <option value="">— None / Trending only —</option>
+          <% for (const cat of categories) { %>
+            <option value="<%= cat %>"><%= cat.charAt(0).toUpperCase() + cat.slice(1) %></option>
+          <% } %>
+        </select>
       </div>
 
       <div style="display:flex;gap:0.75rem;align-items:center;margin-top:0.5rem">

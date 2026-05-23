@@ -1,23 +1,25 @@
 const User = require("../models/user");
 
-// SIGN UP FORM
+// ─── SIGNUP FORM ──────────────────────────────────────────────────────────────
 module.exports.renderSignupForm = (req, res) => {
     res.render("users/signup.ejs");
 };
 
-// SIGN UP
-// FIX: req.session.redirectUrl is not set during signup flow — use res.locals with fallback
+// ─── SIGNUP ───────────────────────────────────────────────────────────────────
 module.exports.signup = async (req, res, next) => {
     try {
-        let { username, email, password } = req.body;
-        const newUser = new User({ email, username });
+        const { email, password } = req.body;
+
+        // passport-local-mongoose's User.register(user, password) hashes the
+        // password and saves the document. Since usernameField is "email",
+        // the first argument just needs { email }.
+        const newUser        = new User({ email });
         const registeredUser = await User.register(newUser, password);
+
         req.login(registeredUser, (err) => {
-            if (err) {
-                return next(err);
-            }
+            if (err) return next(err);
             req.flash("success", "Welcome to WanderLust!");
-            let redirectUrl = res.locals.redirectUrl || "/listings";
+            const redirectUrl = res.locals.redirectUrl || "/listings";
             res.redirect(redirectUrl);
         });
     } catch (err) {
@@ -26,25 +28,21 @@ module.exports.signup = async (req, res, next) => {
     }
 };
 
-// LOGIN FORM
+// ─── LOGIN FORM ───────────────────────────────────────────────────────────────
 module.exports.renderLoginForm = (req, res) => {
     res.render("users/login.ejs");
 };
 
-// LOGIN
-module.exports.login = async (req, res) => {
-    req.flash("success", "Welcome back to WanderLust!");
-    let redirectUrl = res.locals.redirectUrl || "/listings";
-    res.redirect(redirectUrl);
-};
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+// Flash + redirect are handled in route/user.js via the custom passport
+// callback — this controller action is intentionally not reached.
+module.exports.login = (req, res) => {};
 
-// LOGOUT
+// ─── LOGOUT ───────────────────────────────────────────────────────────────────
 module.exports.logout = (req, res, next) => {
     req.logout((err) => {
-        if (err) {
-            return next(err);
-        }
-        req.flash("success", "You have logged out.");
+        if (err) return next(err);
+        req.flash("success", "You have been logged out.");
         res.redirect("/listings");
     });
 };

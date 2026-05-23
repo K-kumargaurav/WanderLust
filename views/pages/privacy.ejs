@@ -1,0 +1,118 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="form-page" style="max-width: 780px">
+  <h1 class="form-page-title">Privacy Policy</h1>
+  <p class="form-page-subtitle">
+    Last updated: <%= new Date().getFullYear() %>
+  </p>
+
+  <div class="form-card" style="line-height: 1.8; color: var(--charcoal-60)">
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      1. Information We Collect
+    </h2>
+    <p style="margin-bottom: 1.5rem">
+      When you register on WanderLust, we collect your username, email address,
+      and a hashed version of your password. When you create a listing, we store
+      the listing details, uploaded images (hosted on Cloudinary), and the
+      approximate location resolved via the Mapbox Geocoding API.
+    </p>
+
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      2. How We Use Your Information
+    </h2>
+    <p style="margin-bottom: 1.5rem">
+      Your information is used solely to operate the platform — authenticating
+      sessions, displaying listings, and attributing reviews to the correct
+      author. We do not sell or share your data with third parties for marketing
+      purposes.
+    </p>
+
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      3. Cookies &amp; Sessions
+    </h2>
+    <p style="margin-bottom: 1.5rem">
+      We use a single encrypted session cookie to keep you logged in. Session
+      data is stored securely in MongoDB via connect-mongo. The cookie expires
+      after 7 days or when you log out.
+    </p>
+
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      4. Third-Party Services
+    </h2>
+    <p style="margin-bottom: 1.5rem">
+      We use <strong>Cloudinary</strong> for image storage and
+      <strong>Mapbox</strong> for geocoding and map rendering. Please review
+      their respective privacy policies for details on how they handle data.
+    </p>
+
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      5. Data Retention &amp; Deletion
+    </h2>
+    <p style="margin-bottom: 1.5rem">
+      Your account and all associated listings and reviews are retained until
+      you delete them or request account removal. To request deletion, contact
+      us at the email address below.
+    </p>
+
+    <h2
+      style="
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        font-weight: 500;
+        color: var(--charcoal);
+        margin-bottom: 0.5rem;
+      "
+    >
+      6. Contact
+    </h2>
+    <p>
+      Questions? Email us at
+      <a
+        href="mailto:privacy@wanderlust.example.com"
+        style="color: var(--terra)"
+      >
+        privacy@wanderlust.example.com </a
+      >.
+    </p>
+  </div>
+</div>

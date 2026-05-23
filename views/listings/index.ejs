@@ -1,48 +1,19 @@
 <% layout("/layouts/boilerplate") %>
 
-<!-- Filter Bar -->
+<!-- Filter Bar — driven by FILTERS array from the controller -->
 <div class="filter-bar" role="navigation" aria-label="Category filters">
 
-  <div class="filter-item active" data-filter="trending">
-    <i class="fa-solid fa-fire-flame-curved"></i>
-    <span>Trending</span>
-  </div>
-  <div class="filter-item" data-filter="rooms">
-    <i class="fa-solid fa-bed"></i>
-    <span>Rooms</span>
-  </div>
-  <div class="filter-item" data-filter="cities">
-    <i class="fa-solid fa-mountain-city"></i>
-    <span>Iconic Cities</span>
-  </div>
-  <div class="filter-item" data-filter="mountains">
-    <i class="fa-solid fa-mountain"></i>
-    <span>Mountains</span>
-  </div>
-  <div class="filter-item" data-filter="castles">
-    <i class="fa-brands fa-fort-awesome"></i>
-    <span>Castles</span>
-  </div>
-  <div class="filter-item" data-filter="pools">
-    <i class="fa-solid fa-person-swimming"></i>
-    <span>Amazing Pools</span>
-  </div>
-  <div class="filter-item" data-filter="camping">
-    <i class="fa-solid fa-campground"></i>
-    <span>Camping</span>
-  </div>
-  <div class="filter-item" data-filter="farms">
-    <i class="fa-solid fa-cow"></i>
-    <span>Farms</span>
-  </div>
-  <div class="filter-item" data-filter="arctic">
-    <i class="fa-regular fa-snowflake"></i>
-    <span>Arctic</span>
-  </div>
-  <div class="filter-item" data-filter="beach">
-    <i class="fa-solid fa-umbrella-beach"></i>
-    <span>Beach</span>
-  </div>
+  <% for (const f of FILTERS) { %>
+    <a
+      href="/listings?filter=<%= f.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %>"
+      class="filter-item <%= currentFilter === f.slug ? 'active' : '' %>"
+      aria-label="<%= f.label %>"
+      aria-current="<%= currentFilter === f.slug ? 'page' : 'false' %>"
+    >
+      <i class="fa-solid <%= f.icon %>"></i>
+      <span><%= f.label %></span>
+    </a>
+  <% } %>
 
   <div class="filter-bar-divider"></div>
 
@@ -56,9 +27,17 @@
   </div>
 </div>
 
+<!-- Active search indicator -->
+<% if (searchQuery) { %>
+  <div style="max-width:1320px;margin:0 auto;padding:0.5rem 2rem;font-size:0.875rem;color:var(--charcoal-60)">
+    Results for <strong style="color:var(--charcoal)">"<%= searchQuery %>"</strong>
+    &mdash; <a href="/listings" style="color:var(--terra);text-decoration:none">Clear search</a>
+  </div>
+<% } %>
+
 <!-- Listings Grid -->
 <div class="listings-grid">
-  <% for(let listing of allListings) { %>
+  <% for (let listing of allListings) { %>
     <a href="/listings/<%= listing._id %>" class="listing-card" aria-label="<%= listing.title %>">
       <div class="listing-card-inner">
         <div class="listing-card-img-wrap">
@@ -88,11 +67,19 @@
   <% } %>
 </div>
 
-<% if(allListings.length === 0) { %>
+<% if (allListings.length === 0) { %>
   <div style="text-align:center;padding:6rem 2rem;color:var(--charcoal-60)">
     <i class="fa-regular fa-compass" style="font-size:3rem;margin-bottom:1rem;display:block;color:var(--charcoal-20)"></i>
     <p style="font-family:var(--font-display);font-size:1.5rem;margin-bottom:0.5rem">No listings found</p>
-    <p style="font-size:0.875rem">Be the first to <a href="/listings/new" style="color:var(--terra)">add one</a>.</p>
+    <% if (searchQuery) { %>
+      <p style="font-size:0.875rem">
+        No results for "<strong><%= searchQuery %></strong>".
+        <a href="/listings" style="color:var(--terra)">Browse all listings</a>.
+      </p>
+    <% } else { %>
+      <p style="font-size:0.875rem">
+        Be the first to <a href="/listings/new" style="color:var(--terra)">add one</a>.
+      </p>
+    <% } %>
   </div>
 <% } %>
-
