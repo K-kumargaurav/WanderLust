@@ -14,6 +14,24 @@
     </div>
   </div>
 
+  <!-- Stats -->
+  <div class="profile-stats">
+    <div class="profile-stat">
+      <div class="profile-stat-value"><%= myListings.length %></div>
+      <div class="profile-stat-label">Listings</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value"><%= reviewsWithListings.length %></div>
+      <div class="profile-stat-label">Reviews</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value">
+        <%= new Date(user._id.getTimestamp()).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' }) %>
+      </div>
+      <div class="profile-stat-label">Member Since</div>
+    </div>
+  </div>
+
   <!-- My Listings -->
   <div class="profile-section">
     <h2 class="profile-section-title">

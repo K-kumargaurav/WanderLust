@@ -170,6 +170,9 @@ app.use((req, res, next) => {
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => res.redirect("/listings"));
 
+app.get("/privacy", (req, res) => res.render("pages/privacy"));
+app.get("/terms", (req, res) => res.render("pages/terms"));
+
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);

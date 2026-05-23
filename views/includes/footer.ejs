@@ -1,17 +1,47 @@
 <footer class="wl-footer">
   <div class="wl-footer-inner">
-    <span>&copy; <%= new Date().getFullYear() %> WanderLust Pvt. Ltd. &mdash; All rights reserved.</span>
-
-    <div class="wl-footer-links">
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-      <a href="/listings">Explore</a>
+    <!-- About -->
+    <div class="wl-footer-col">
+      <div class="wl-footer-brand">
+        <div class="wl-brand-icon" style="width:28px;height:28px;font-size:0.8rem">
+          <i class="fa-regular fa-compass"></i>
+        </div>
+        <span style="font-family:var(--font-display);font-size:1.2rem;font-weight:500">WanderLust</span>
+      </div>
+      <p class="wl-footer-about">
+        Discover unique stays around the world. From cozy rooms to mountaintop retreats, find your perfect escape.
+      </p>
+      <div class="wl-footer-socials">
+        <a href="#" aria-label="Facebook"><i class="fa-brands fa-square-facebook"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-square-instagram"></i></a>
+        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-square-linkedin"></i></a>
+      </div>
     </div>
 
-    <div class="wl-footer-socials">
-      <a href="#" aria-label="Facebook"><i class="fa-brands fa-square-facebook"></i></a>
-      <a href="#" aria-label="Instagram"><i class="fa-brands fa-square-instagram"></i></a>
-      <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-square-linkedin"></i></a>
+    <!-- Quick Links -->
+    <div class="wl-footer-col">
+      <h4 class="wl-footer-heading">Quick Links</h4>
+      <div class="wl-footer-links-col">
+        <a href="/listings">Explore Listings</a>
+        <a href="/listings/new">Add a Listing</a>
+        <a href="/wishlist">My Wishlist</a>
+        <a href="/profile">My Profile</a>
+      </div>
     </div>
+
+    <!-- Support -->
+    <div class="wl-footer-col">
+      <h4 class="wl-footer-heading">Support</h4>
+      <div class="wl-footer-links-col">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="#">Help Center</a>
+        <a href="#">Contact Us</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wl-footer-bottom">
+    &copy; <%= new Date().getFullYear() %> WanderLust Pvt. Ltd. &mdash; All rights reserved.
   </div>
 </footer>
