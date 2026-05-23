@@ -43,11 +43,11 @@ if (taxSwitch) {
   });
 }
 
-// Filter bar active state
-document.querySelectorAll('.filter-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.filter-item').forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
+// Filter chip active state
+document.querySelectorAll('.filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
   });
 });
 
@@ -247,3 +247,14 @@ document.querySelectorAll('.wishlist-btn').forEach(btn => {
     }
   });
 });
+
+// ─── Scroll to Top ────────────────────────────────────────────────────────
+const scrollTopBtn = document.getElementById('scroll-top-btn');
+if (scrollTopBtn) {
+  window.addEventListener('scroll', () => {
+    scrollTopBtn.classList.toggle('visible', window.scrollY > 400);
+  });
+  scrollTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}

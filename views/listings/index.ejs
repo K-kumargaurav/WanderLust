@@ -1,62 +1,75 @@
 <% layout("/layouts/boilerplate") %>
 
-<!-- Filter Bar -->
-<div class="filter-bar" role="navigation" aria-label="Category filters">
-  <% for (const f of FILTERS) { %>
-    <a
-      href="/listings?filter=<%= f.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %><%= sortBy !== 'newest' ? '&sort=' + sortBy : '' %>"
-      class="filter-item <%= currentFilter === f.slug ? 'active' : '' %>"
-      aria-label="<%= f.label %>"
-      aria-current="<%= currentFilter === f.slug ? 'page' : 'false' %>"
-    >
-      <i class="fa-solid <%= f.icon %>"></i>
-      <span><%= f.label %></span>
-    </a>
-  <% } %>
+<!-- ── Landing Hero ─────────────────────────── -->
+<section class="landing-hero">
+  <h1 class="landing-hero-title">Discover Your Next Stay</h1>
+  <p class="landing-hero-subtitle">
+    <% if (searchQuery) { %>
+      Results for "<strong><%= searchQuery %></strong>"
+      &mdash; <a href="/listings" class="landing-hero-clear">Clear search</a>
+    <% } else { %>
+      Handpicked places to stay, from cozy rooms to mountaintop retreats
+    <% } %>
+  </p>
+</section>
 
-  <div class="filter-bar-divider"></div>
+<!-- ── Filter Chips ─────────────────────────── -->
+<div class="filter-chips" role="navigation" aria-label="Category filters">
+  <div class="filter-chips-track">
+    <% for (const f of FILTERS) { %>
+      <a
+        href="/listings?filter=<%= f.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %><%= sortBy !== 'newest' ? '&sort=' + sortBy : '' %>"
+        class="filter-chip <%= currentFilter === f.slug ? 'active' : '' %>"
+        aria-current="<%= currentFilter === f.slug ? 'page' : 'false' %>"
+      >
+        <i class="fa-solid <%= f.icon %>"></i>
+        <span><%= f.label %></span>
+      </a>
+    <% } %>
+  </div>
 
-  <!-- Tax toggle -->
-  <div class="tax-toggle-wrap">
-    <label class="toggle-switch" for="taxSwitch" aria-label="Toggle taxes">
-      <input type="checkbox" id="taxSwitch" />
-      <span class="toggle-track"></span>
-    </label>
-    <span>Show total with taxes</span>
+  <div class="filter-actions">
+    <!-- Tax toggle -->
+    <div class="tax-toggle-wrap">
+      <label class="toggle-switch" for="taxSwitch" aria-label="Toggle taxes">
+        <input type="checkbox" id="taxSwitch" />
+        <span class="toggle-track"></span>
+      </label>
+      <span>Taxes</span>
+    </div>
+
+    <!-- Sort -->
+    <div class="sort-select-wrap">
+      <i class="fa-solid fa-arrow-down-wide-short"></i>
+      <select id="sortSelect" aria-label="Sort listings">
+        <%
+          function sortUrl(val) {
+            let u = '/listings?sort=' + val;
+            if (searchQuery) u += '&q=' + encodeURIComponent(searchQuery);
+            if (currentFilter !== 'trending') u += '&filter=' + currentFilter;
+            return u;
+          }
+        %>
+        <option value="<%= sortUrl('newest') %>"    <%= sortBy === 'newest'    ? 'selected' : '' %>>Newest</option>
+        <option value="<%= sortUrl('oldest') %>"    <%= sortBy === 'oldest'    ? 'selected' : '' %>>Oldest</option>
+        <option value="<%= sortUrl('price_low') %>" <%= sortBy === 'price_low' ? 'selected' : '' %>>Price: Low</option>
+        <option value="<%= sortUrl('price_high') %>"<%= sortBy === 'price_high'? 'selected' : '' %>>Price: High</option>
+      </select>
+    </div>
   </div>
 </div>
 
-<!-- Sort + Search info bar -->
-<div class="index-toolbar">
-  <% if (searchQuery) { %>
-    <span class="index-toolbar-info">
-      Results for <strong>"<%= searchQuery %>"</strong>
-      &mdash; <a href="/listings">Clear search</a>
-    </span>
-  <% } else { %>
-    <span class="index-toolbar-info"><%= totalListings %> listing<%= totalListings !== 1 ? 's' : '' %></span>
-  <% } %>
-
-  <div class="sort-select-wrap">
-    <label for="sortSelect"><i class="fa-solid fa-arrow-down-wide-short"></i></label>
-    <select id="sortSelect">
-      <%
-        function sortUrl(val) {
-          let u = '/listings?sort=' + val;
-          if (searchQuery) u += '&q=' + encodeURIComponent(searchQuery);
-          if (currentFilter !== 'trending') u += '&filter=' + currentFilter;
-          return u;
-        }
-      %>
-      <option value="<%= sortUrl('newest') %>"    <%= sortBy === 'newest'    ? 'selected' : '' %>>Newest</option>
-      <option value="<%= sortUrl('oldest') %>"    <%= sortBy === 'oldest'    ? 'selected' : '' %>>Oldest</option>
-      <option value="<%= sortUrl('price_low') %>" <%= sortBy === 'price_low' ? 'selected' : '' %>>Price: Low to High</option>
-      <option value="<%= sortUrl('price_high') %>"<%= sortBy === 'price_high'? 'selected' : '' %>>Price: High to Low</option>
-    </select>
-  </div>
+<!-- ── Results Info ─────────────────────────── -->
+<div class="results-bar">
+  <span class="results-count">
+    <%= totalListings %> listing<%= totalListings !== 1 ? 's' : '' %>
+    <% if (currentFilter !== 'trending') { %>
+      in <strong><%= FILTERS.find(f => f.slug === currentFilter)?.label || currentFilter %></strong>
+    <% } %>
+  </span>
 </div>
 
-<!-- Listings Grid -->
+<!-- ── Listings Grid ────────────────────────── -->
 <div class="listings-grid">
   <% for (let listing of allListings) { %>
     <div class="listing-card-wrap">
@@ -79,18 +92,21 @@
               loading="lazy"
             />
             <span class="listing-card-badge"><%= listing.country %></span>
+            <% if (listing.category) { %>
+              <span class="listing-card-category"><%= listing.category %></span>
+            <% } %>
           </div>
           <div class="listing-card-body">
             <div class="listing-card-title"><%= listing.title %></div>
             <div class="listing-card-location">
-              <i class="fa-solid fa-location-dot" style="font-size:0.7rem;margin-right:3px"></i>
+              <i class="fa-solid fa-location-dot"></i>
               <%= listing.location %>
             </div>
             <div class="listing-card-price">
               &#8377;<%= listing.price.toLocaleString("en-IN") %>
               <span>/ night</span>
-              <span class="tax-amount" style="display:none;color:var(--sand);font-size:0.8rem">
-                &nbsp;+&#8377;<%= Math.round(listing.price * 0.18).toLocaleString("en-IN") %> GST
+              <span class="tax-amount" style="display:none">
+                &nbsp;+&#8377;<%= Math.round(listing.price * 0.18).toLocaleString("en-IN") %> tax
               </span>
             </div>
           </div>
@@ -100,24 +116,25 @@
   <% } %>
 </div>
 
+<!-- ── Empty State ──────────────────────────── -->
 <% if (allListings.length === 0) { %>
-  <div style="text-align:center;padding:6rem 2rem;color:var(--charcoal-60)">
-    <i class="fa-regular fa-compass" style="font-size:3rem;margin-bottom:1rem;display:block;color:var(--charcoal-20)"></i>
-    <p style="font-family:var(--font-display);font-size:1.5rem;margin-bottom:0.5rem">No listings found</p>
+  <div class="empty-state">
+    <i class="fa-regular fa-compass"></i>
+    <h2>No listings found</h2>
     <% if (searchQuery) { %>
-      <p style="font-size:0.875rem">
+      <p>
         No results for "<strong><%= searchQuery %></strong>".
-        <a href="/listings" style="color:var(--terra)">Browse all listings</a>.
+        <a href="/listings">Browse all listings</a>.
       </p>
     <% } else { %>
-      <p style="font-size:0.875rem">
-        Be the first to <a href="/listings/new" style="color:var(--terra)">add one</a>.
+      <p>
+        Be the first to <a href="/listings/new">add one</a>.
       </p>
     <% } %>
   </div>
 <% } %>
 
-<!-- Pagination -->
+<!-- ── Pagination ───────────────────────────── -->
 <% if (totalPages > 1) { %>
   <nav class="pagination" aria-label="Listing pages">
     <%

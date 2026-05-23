@@ -24,22 +24,26 @@
         &nbsp;<span style="color:var(--sand)">(<%= listing.reviews.length %> review<%= listing.reviews.length !== 1 ? 's' : '' %>)</span>
       </span>
     <% } %>
+    <% if (listing.category) { %>
+      <span class="dot">·</span>
+      <span class="show-category-pill">
+        <i class="fa-solid fa-tag" style="margin-right:4px;font-size:0.75rem"></i>
+        <%= listing.category %>
+      </span>
+    <% } %>
   </div>
 
   <!-- Image Gallery -->
-  <% if (listing.images && listing.images.length > 1) { %>
-    <div class="show-gallery">
-      <div class="show-gallery-main">
-        <img src="<%= listing.images[0].url %>" alt="<%= listing.title %>" id="gallery-main-img" />
+  <% if (listing.images && listing.images.length >= 2) { %>
+    <div class="show-gallery-grid show-gallery-<%= Math.min(listing.images.length, 3) %>">
+      <div class="show-gallery-primary">
+        <img src="<%= listing.images[0].url %>" alt="<%= listing.title %>" />
       </div>
-      <div class="show-gallery-thumbs">
-        <% listing.images.forEach((img, i) => { %>
-          <img
-            src="<%= img.url %>"
-            alt="Photo <%= i + 1 %>"
-            class="gallery-thumb <%= i === 0 ? 'active' : '' %>"
-          />
-        <% }) %>
+      <div class="show-gallery-secondary">
+        <img src="<%= listing.images[1].url %>" alt="<%= listing.title %> photo 2" />
+        <% if (listing.images.length >= 3) { %>
+          <img src="<%= listing.images[2].url %>" alt="<%= listing.title %> photo 3" />
+        <% } %>
       </div>
     </div>
   <% } else { %>
@@ -74,13 +78,23 @@
     <!-- Details -->
     <div class="show-details-grid">
       <div class="show-detail-item">
-        <div class="show-detail-label">Location</div>
+        <div class="show-detail-label"><i class="fa-solid fa-location-dot"></i> Location</div>
         <div class="show-detail-value"><%= listing.location %></div>
       </div>
       <div class="show-detail-item">
-        <div class="show-detail-label">Country</div>
+        <div class="show-detail-label"><i class="fa-solid fa-globe"></i> Country</div>
         <div class="show-detail-value"><%= listing.country %></div>
       </div>
+      <div class="show-detail-item">
+        <div class="show-detail-label"><i class="fa-solid fa-indian-rupee-sign"></i> Price</div>
+        <div class="show-detail-value">&#8377;<%= listing.price.toLocaleString("en-IN") %> / night</div>
+      </div>
+      <% if (listing.category) { %>
+        <div class="show-detail-item">
+          <div class="show-detail-label"><i class="fa-solid fa-tag"></i> Category</div>
+          <div class="show-detail-value"><%= listing.category %></div>
+        </div>
+      <% } %>
     </div>
 
     <!-- Owner Actions -->
