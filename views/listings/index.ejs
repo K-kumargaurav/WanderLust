@@ -1,11 +1,10 @@
 <% layout("/layouts/boilerplate") %>
 
-<!-- Filter Bar — driven by FILTERS array from the controller -->
+<!-- Filter Bar -->
 <div class="filter-bar" role="navigation" aria-label="Category filters">
-
   <% for (const f of FILTERS) { %>
     <a
-      href="/listings?filter=<%= f.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %>"
+      href="/listings?filter=<%= f.slug %><%= searchQuery ? '&q=' + encodeURIComponent(searchQuery) : '' %><%= sortBy !== 'newest' ? '&sort=' + sortBy : '' %>"
       class="filter-item <%= currentFilter === f.slug ? 'active' : '' %>"
       aria-label="<%= f.label %>"
       aria-current="<%= currentFilter === f.slug ? 'page' : 'false' %>"
@@ -27,43 +26,77 @@
   </div>
 </div>
 
-<!-- Active search indicator -->
-<% if (searchQuery) { %>
-  <div style="max-width:1320px;margin:0 auto;padding:0.5rem 2rem;font-size:0.875rem;color:var(--charcoal-60)">
-    Results for <strong style="color:var(--charcoal)">"<%= searchQuery %>"</strong>
-    &mdash; <a href="/listings" style="color:var(--terra);text-decoration:none">Clear search</a>
+<!-- Sort + Search info bar -->
+<div class="index-toolbar">
+  <% if (searchQuery) { %>
+    <span class="index-toolbar-info">
+      Results for <strong>"<%= searchQuery %>"</strong>
+      &mdash; <a href="/listings">Clear search</a>
+    </span>
+  <% } else { %>
+    <span class="index-toolbar-info"><%= totalListings %> listing<%= totalListings !== 1 ? 's' : '' %></span>
+  <% } %>
+
+  <div class="sort-select-wrap">
+    <label for="sortSelect"><i class="fa-solid fa-arrow-down-wide-short"></i></label>
+    <select id="sortSelect" onchange="window.location.href=this.value">
+      <%
+        function sortUrl(val) {
+          let u = '/listings?sort=' + val;
+          if (searchQuery) u += '&q=' + encodeURIComponent(searchQuery);
+          if (currentFilter !== 'trending') u += '&filter=' + currentFilter;
+          return u;
+        }
+      %>
+      <option value="<%= sortUrl('newest') %>"    <%= sortBy === 'newest'    ? 'selected' : '' %>>Newest</option>
+      <option value="<%= sortUrl('oldest') %>"    <%= sortBy === 'oldest'    ? 'selected' : '' %>>Oldest</option>
+      <option value="<%= sortUrl('price_low') %>" <%= sortBy === 'price_low' ? 'selected' : '' %>>Price: Low to High</option>
+      <option value="<%= sortUrl('price_high') %>"<%= sortBy === 'price_high'? 'selected' : '' %>>Price: High to Low</option>
+    </select>
   </div>
-<% } %>
+</div>
 
 <!-- Listings Grid -->
 <div class="listings-grid">
   <% for (let listing of allListings) { %>
-    <a href="/listings/<%= listing._id %>" class="listing-card" aria-label="<%= listing.title %>">
-      <div class="listing-card-inner">
-        <div class="listing-card-img-wrap">
-          <img
-            src="<%= listing.image.url %>"
-            alt="<%= listing.title %>"
-            loading="lazy"
-          />
-          <span class="listing-card-badge"><%= listing.country %></span>
-        </div>
-        <div class="listing-card-body">
-          <div class="listing-card-title"><%= listing.title %></div>
-          <div class="listing-card-location">
-            <i class="fa-solid fa-location-dot" style="font-size:0.7rem;margin-right:3px"></i>
-            <%= listing.location %>
+    <div class="listing-card-wrap">
+      <% if (currUser) { %>
+        <button
+          class="wishlist-btn <%= currUser.wishlist && currUser.wishlist.map(String).includes(String(listing._id)) ? 'wishlisted' : '' %>"
+          data-listing-id="<%= listing._id %>"
+          data-csrf="<%= csrfToken %>"
+          aria-label="Toggle wishlist"
+        >
+          <i class="fa-<%= currUser.wishlist && currUser.wishlist.map(String).includes(String(listing._id)) ? 'solid' : 'regular' %> fa-heart"></i>
+        </button>
+      <% } %>
+      <a href="/listings/<%= listing._id %>" class="listing-card" aria-label="<%= listing.title %>">
+        <div class="listing-card-inner">
+          <div class="listing-card-img-wrap">
+            <img
+              src="<%= listing.images && listing.images.length > 0 ? listing.images[0].url : '' %>"
+              alt="<%= listing.title %>"
+              loading="lazy"
+            />
+            <span class="listing-card-badge"><%= listing.country %></span>
           </div>
-          <div class="listing-card-price">
-            &#8377;<%= listing.price.toLocaleString("en-IN") %>
-            <span>/ night</span>
-            <span class="tax-amount" style="display:none;color:var(--sand);font-size:0.8rem">
-              &nbsp;+&#8377;<%= Math.round(listing.price * 0.18).toLocaleString("en-IN") %> GST
-            </span>
+          <div class="listing-card-body">
+            <div class="listing-card-title"><%= listing.title %></div>
+            <div class="listing-card-location">
+              <i class="fa-solid fa-location-dot" style="font-size:0.7rem;margin-right:3px"></i>
+              <%= listing.location %>
+            </div>
+            <div class="listing-card-price">
+              &#8377;<%= listing.price.toLocaleString("en-IN") %>
+              <span>/ night</span>
+              <span class="tax-amount" style="display:none;color:var(--sand);font-size:0.8rem">
+                &nbsp;+&#8377;<%= Math.round(listing.price * 0.18).toLocaleString("en-IN") %> GST
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
   <% } %>
 </div>
 
@@ -82,4 +115,34 @@
       </p>
     <% } %>
   </div>
+<% } %>
+
+<!-- Pagination -->
+<% if (totalPages > 1) { %>
+  <nav class="pagination" aria-label="Listing pages">
+    <%
+      function pageUrl(p) {
+        let u = '/listings?page=' + p;
+        if (searchQuery) u += '&q=' + encodeURIComponent(searchQuery);
+        if (currentFilter !== 'trending') u += '&filter=' + currentFilter;
+        if (sortBy !== 'newest') u += '&sort=' + sortBy;
+        return u;
+      }
+    %>
+    <% if (currentPage > 1) { %>
+      <a href="<%= pageUrl(currentPage - 1) %>" class="page-btn">&laquo; Prev</a>
+    <% } %>
+
+    <% for (let p = 1; p <= totalPages; p++) { %>
+      <% if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) { %>
+        <a href="<%= pageUrl(p) %>" class="page-btn <%= p === currentPage ? 'active' : '' %>"><%= p %></a>
+      <% } else if (p === currentPage - 3 || p === currentPage + 3) { %>
+        <span class="page-dots">&hellip;</span>
+      <% } %>
+    <% } %>
+
+    <% if (currentPage < totalPages) { %>
+      <a href="<%= pageUrl(currentPage + 1) %>" class="page-btn">Next &raquo;</a>
+    <% } %>
+  </nav>
 <% } %>

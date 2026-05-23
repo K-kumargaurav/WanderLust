@@ -28,6 +28,7 @@ const User         = require("./models/user.js");
 
 // ─── Security middleware ─────────────────────────────────────────────────────
 const helmet      = require("helmet");
+const { setCsrfToken, validateCsrf } = require("./middleware.js");
 
 const listingRouter = require("./route/listing.js");
 const reviewRouter  = require("./route/review.js");
@@ -61,7 +62,6 @@ app.use(express.static(path.join(__dirname, "/public")));
 // ─── SECURITY HEADERS ─────────────────────────────────────────────────────────
 app.use(
     helmet({
-        // Allow Mapbox GL JS and Cloudinary images inline
         contentSecurityPolicy: {
             directives: {
                 defaultSrc: ["'self'"],
@@ -69,7 +69,6 @@ app.use(
                     "'self'",
                     "https://api.mapbox.com",
                     "https://cdnjs.cloudflare.com",
-                    // Unsafe-inline is required by mapbox-gl — tighten via nonce in production
                     "'unsafe-inline'",
                 ],
                 workerSrc: ["'self'", "blob:"],
@@ -124,7 +123,6 @@ const sessionOptions = {
     cookie: {
         maxAge:   7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        // Only send the cookie over HTTPS in production
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
     },
@@ -140,13 +138,15 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+// ─── CSRF TOKEN ───────────────────────────────────────────────────────────────
+app.use(setCsrfToken);
+
 // ─── LOCALS ───────────────────────────────────────────────────────────────────
 app.use((req, res, next) => {
     res.locals.success  = req.flash("success");
     res.locals.error    = req.flash("error");
-    
     res.locals.mapToken = process.env.MAP_TOKEN;
-res.locals.currUser = req.user;
+    res.locals.currUser = req.user;
     next();
 });
 

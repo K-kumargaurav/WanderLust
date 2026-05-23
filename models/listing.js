@@ -2,10 +2,6 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Review = require("./review");
 
-/**
- * Valid category slugs — kept in sync with the filter bar in index.ejs
- * and the category select in new/edit forms.
- */
 const LISTING_CATEGORIES = [
     "Rooms",
     "Iconic Cities",
@@ -31,10 +27,12 @@ const listingSchema = new Schema({
         required: true,
         trim: true,
     },
-    image: {
-        url: String,
-        filename: String,
-    },
+    images: [
+        {
+            url: String,
+            filename: String,
+        },
+    ],
     price: {
         type: Number,
         min: 0,
@@ -75,6 +73,15 @@ const listingSchema = new Schema({
             required: true,
         },
     },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+});
+
+// Virtual: backward-compat getter for single image access
+listingSchema.virtual("image").get(function () {
+    return this.images && this.images.length > 0 ? this.images[0] : null;
 });
 
 // Cascade-delete reviews when a listing is removed.

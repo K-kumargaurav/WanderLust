@@ -1,0 +1,74 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="profile-page">
+  <div class="profile-header">
+    <div class="profile-avatar">
+      <%= user.username.charAt(0).toUpperCase() %>
+    </div>
+    <div>
+      <h1 class="profile-name"><%= user.username %></h1>
+      <p class="profile-email"><%= user.email %></p>
+      <p style="font-size:0.8rem;color:var(--sand)">
+        Member since <%= new Date(user._id.getTimestamp()).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' }) %>
+      </p>
+    </div>
+  </div>
+
+  <!-- My Listings -->
+  <div class="profile-section">
+    <h2 class="profile-section-title">
+      <i class="fa-solid fa-house" style="color:var(--terra);margin-right:0.5rem"></i>
+      My Listings (<%= myListings.length %>)
+    </h2>
+
+    <% if (myListings.length > 0) { %>
+      <div class="profile-listings-grid">
+        <% for (const listing of myListings) { %>
+          <a href="/listings/<%= listing._id %>" class="profile-listing-card">
+            <img src="<%= listing.images && listing.images.length > 0 ? listing.images[0].url : '' %>" alt="<%= listing.title %>" />
+            <div class="profile-listing-info">
+              <div class="profile-listing-title"><%= listing.title %></div>
+              <div class="profile-listing-meta">
+                <%= listing.location %> &middot; &#8377;<%= listing.price.toLocaleString("en-IN") %>/night
+              </div>
+            </div>
+          </a>
+        <% } %>
+      </div>
+    <% } else { %>
+      <p style="color:var(--sand);font-size:0.875rem">
+        You haven't created any listings yet. <a href="/listings/new" style="color:var(--terra)">Create one</a>.
+      </p>
+    <% } %>
+  </div>
+
+  <!-- My Reviews -->
+  <div class="profile-section">
+    <h2 class="profile-section-title">
+      <i class="fa-solid fa-star" style="color:var(--terra);margin-right:0.5rem"></i>
+      My Reviews (<%= reviewsWithListings.length %>)
+    </h2>
+
+    <% if (reviewsWithListings.length > 0) { %>
+      <div class="profile-reviews-list">
+        <% for (const { review, listing } of reviewsWithListings) { %>
+          <div class="profile-review-item">
+            <div class="star-display-group" style="margin-bottom:0.3rem">
+              <% for (let i = 1; i <= 5; i++) { %>
+                <i class="<%= i <= review.rating ? 'fas' : 'far' %> fa-star"></i>
+              <% } %>
+            </div>
+            <p style="font-size:0.875rem;color:var(--charcoal);margin-bottom:0.25rem"><%= review.comment %></p>
+            <% if (listing) { %>
+              <a href="/listings/<%= listing._id %>" style="font-size:0.8rem;color:var(--terra)">
+                on "<%= listing.title %>"
+              </a>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <p style="color:var(--sand);font-size:0.875rem">You haven't written any reviews yet.</p>
+    <% } %>
+  </div>
+</div>

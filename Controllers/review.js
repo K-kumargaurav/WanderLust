@@ -20,6 +20,21 @@ module.exports.createReview = async (req, res) => {
     res.redirect(`/listings/${listing.id}`);
 };
 
+// ─── UPDATE REVIEW ────────────────────────────────────────────────────────────
+module.exports.updateReview = async (req, res) => {
+    const { id, reviewId } = req.params;
+    const { rating, comment } = req.body.review;
+
+    const review = await Review.findByIdAndUpdate(reviewId, { rating, comment });
+    if (!review) {
+        req.flash("error", "Review does not exist!");
+        return res.redirect(`/listings/${id}`);
+    }
+
+    req.flash("success", "Review updated!");
+    res.redirect(`/listings/${id}`);
+};
+
 // ─── DELETE REVIEW ────────────────────────────────────────────────────────────
 module.exports.destroyReview = async (req, res) => {
     const { id, reviewId } = req.params;

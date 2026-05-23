@@ -3,7 +3,6 @@
 <div class="auth-page">
   <div class="auth-card">
 
-    <!-- Header -->
     <div class="auth-card-header">
       <div class="auth-logo">
         <i class="fa-regular fa-compass"></i>
@@ -12,16 +11,14 @@
       <p class="auth-subtitle">Join thousands of travellers on WanderLust</p>
     </div>
 
-    <!--
-      name="email"    → matches usernameField: "email" in passport-local-mongoose
-      name="password" → standard passport-local field
-    -->
     <form
       action="/signup"
       method="POST"
       class="needs-validation"
       novalidate
     >
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
       <!-- Email -->
       <div class="form-group">
         <label for="signup-email" class="form-label">Email</label>
@@ -53,7 +50,6 @@
             autocomplete="new-password"
             style="padding-right:2.75rem"
           />
-          <!-- Toggle password visibility -->
           <button
             type="button"
             aria-label="Toggle password visibility"
@@ -65,7 +61,6 @@
             "
             onclick="
               const inp = document.getElementById('signup-password');
-              const str = document.getElementById('pwd-strength');
               inp.type = inp.type === 'password' ? 'text' : 'password';
               this.querySelector('i').classList.toggle('fa-eye');
               this.querySelector('i').classList.toggle('fa-eye-slash');
@@ -118,7 +113,6 @@
     if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++;
     if (/[0-9]/.test(pwd))                    s++;
     if (/[^A-Za-z0-9]/.test(pwd))            s++;
-    // Clamp to 4 levels
     return Math.min(Math.floor(s / 1.25), 3);
   }
 

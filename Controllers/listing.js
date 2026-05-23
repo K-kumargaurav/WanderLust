@@ -2,40 +2,76 @@ const Listing = require("../models/listing");
 const { LISTING_CATEGORIES } = require("../models/listing");
 const expressErr = require("../utils/expressErr");
 const mbxGeocoding = require("@mapbox/mapbox-sdk/services/geocoding");
+const { deleteImage } = require("../cloudConfig");
 
 const mapToken = process.env.MAP_TOKEN;
 const geocodingClient = mbxGeocoding({ accessToken: mapToken });
 
+const ITEMS_PER_PAGE = 12;
+
 const FILTERS = [
-    { slug: "trending",  label: "Trending",      icon: "fa-fire-flame-curved",  query: {} },
-    { slug: "rooms",     label: "Rooms",          icon: "fa-bed",                query: { title: /room/i } },
-    { slug: "cities",    label: "Iconic Cities",  icon: "fa-mountain-city",      query: {} },
-    { slug: "mountains", label: "Mountains",      icon: "fa-mountain",           query: { description: /mountain/i } },
-    { slug: "castles",   label: "Castles",        icon: "fa-fort-awesome",       query: { title: /castle/i } },
-    { slug: "pools",     label: "Amazing Pools",  icon: "fa-person-swimming",    query: { description: /pool/i } },
-    { slug: "camping",   label: "Camping",        icon: "fa-campground",         query: { description: /camp/i } },
-    { slug: "farms",     label: "Farms",          icon: "fa-cow",                query: { description: /farm/i } },
-    { slug: "arctic",    label: "Arctic",         icon: "fa-snowflake",          query: { description: /arctic|snow|ice/i } },
-    { slug: "beach",     label: "Beach",          icon: "fa-umbrella-beach",     query: { description: /beach|coast/i } },
+    { slug: "trending",  label: "Trending",      icon: "fa-fire-flame-curved",  query: {}, sort: { "reviews": -1 } },
+    { slug: "rooms",     label: "Rooms",          icon: "fa-bed",                query: { category: "Rooms" } },
+    { slug: "cities",    label: "Iconic Cities",  icon: "fa-mountain-city",      query: { category: "Iconic Cities" } },
+    { slug: "mountains", label: "Mountains",      icon: "fa-mountain",           query: { category: "Mountains" } },
+    { slug: "castles",   label: "Castles",        icon: "fa-fort-awesome",       query: { category: "Castles" } },
+    { slug: "pools",     label: "Amazing Pools",  icon: "fa-person-swimming",    query: { category: "Amazing Pools" } },
+    { slug: "camping",   label: "Camping",        icon: "fa-campground",         query: { category: "Camping" } },
+    { slug: "farms",     label: "Farms",          icon: "fa-cow",                query: { category: "Farms" } },
+    { slug: "arctic",    label: "Arctic",         icon: "fa-snowflake",          query: { category: "Arctic" } },
+    { slug: "beach",     label: "Beach",          icon: "fa-umbrella-beach",     query: { category: "Beach" } },
 ];
 
 // ─── INDEX ────────────────────────────────────────────────────────────────────
 module.exports.index = async (req, res) => {
     const searchQuery   = (req.query.q      || "").trim();
     const currentFilter = (req.query.filter || "trending").trim();
+    const sortBy        = req.query.sort    || "newest";
+    const page          = Math.max(1, parseInt(req.query.page) || 1);
 
     let dbQuery = {};
+    let sortOption = {};
+
+    // Search
     if (searchQuery) {
         const escaped = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const regex = new RegExp(escaped, "i");
         dbQuery = { $or: [{ title: regex }, { location: regex }, { country: regex }] };
     } else {
         const activeFilter = FILTERS.find((f) => f.slug === currentFilter);
-        if (activeFilter) dbQuery = activeFilter.query;
+        if (activeFilter) {
+            dbQuery = activeFilter.query;
+        }
     }
 
-    const allListings = await Listing.find(dbQuery);
-    res.render("listings/index.ejs", { allListings, FILTERS, currentFilter, searchQuery });
+    // Sort
+    switch (sortBy) {
+        case "price_low":  sortOption = { price: 1 };     break;
+        case "price_high": sortOption = { price: -1 };    break;
+        case "oldest":     sortOption = { createdAt: 1 };  break;
+        case "newest":
+        default:           sortOption = { createdAt: -1 }; break;
+    }
+
+    const totalListings = await Listing.countDocuments(dbQuery);
+    const totalPages    = Math.max(1, Math.ceil(totalListings / ITEMS_PER_PAGE));
+    const safePage      = Math.min(page, totalPages);
+
+    const allListings = await Listing.find(dbQuery)
+        .sort(sortOption)
+        .skip((safePage - 1) * ITEMS_PER_PAGE)
+        .limit(ITEMS_PER_PAGE);
+
+    res.render("listings/index.ejs", {
+        allListings,
+        FILTERS,
+        currentFilter,
+        searchQuery,
+        sortBy,
+        currentPage: safePage,
+        totalPages,
+        totalListings,
+    });
 };
 
 // ─── NEW FORM ─────────────────────────────────────────────────────────────────
@@ -62,8 +98,8 @@ module.exports.showListing = async (req, res) => {
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 module.exports.createListing = async (req, res, next) => {
-    if (!req.file) {
-        req.flash("error", "A listing photo is required.");
+    if (!req.files || req.files.length === 0) {
+        req.flash("error", "At least one listing photo is required.");
         return res.redirect("/listings/new");
     }
 
@@ -77,11 +113,9 @@ module.exports.createListing = async (req, res, next) => {
         return res.redirect("/listings/new");
     }
 
-    const { path: url, filename } = req.file;
-
     const newListing = new Listing(req.body.listing);
     newListing.owner    = req.user._id;
-    newListing.image    = { url, filename };
+    newListing.images   = req.files.map((f) => ({ url: f.path, filename: f.filename }));
     newListing.geometry = features[0].geometry;
 
     await newListing.save();
@@ -99,9 +133,7 @@ module.exports.renderEditForm = async (req, res) => {
         return res.redirect("/listings");
     }
 
-    // Serve a smaller preview image (250 px wide) in the edit form
-    const originalImageUrl = listing.image.url.replace("/upload", "/upload/w_250");
-    res.render("listings/edit.ejs", { listing, originalImageUrl });
+    res.render("listings/edit.ejs", { listing, categories: LISTING_CATEGORIES });
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
@@ -125,9 +157,28 @@ module.exports.updateListing = async (req, res) => {
         }
     }
 
-    // Only replace the image when a new file was actually uploaded
-    if (req.file) {
-        listing.image = { url: req.file.path, filename: req.file.filename };
+    // Add new images (up to 3 total)
+    if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((f) => ({ url: f.path, filename: f.filename }));
+        listing.images.push(...newImages);
+        // Keep only the last 3
+        if (listing.images.length > 3) {
+            const removed = listing.images.splice(0, listing.images.length - 3);
+            // Clean up removed images from Cloudinary
+            for (const img of removed) {
+                await deleteImage(img.filename);
+            }
+        }
+    }
+
+    // Handle image deletions from the edit form
+    if (req.body.deleteImages && req.body.deleteImages.length > 0) {
+        for (const filename of req.body.deleteImages) {
+            await deleteImage(filename);
+        }
+        listing.images = listing.images.filter(
+            (img) => !req.body.deleteImages.includes(img.filename)
+        );
     }
 
     await listing.save();
@@ -139,7 +190,16 @@ module.exports.updateListing = async (req, res) => {
 // ─── DELETE ───────────────────────────────────────────────────────────────────
 module.exports.destroyListing = async (req, res) => {
     const { id } = req.params;
-    await Listing.findByIdAndDelete(id);
+    const listing = await Listing.findById(id);
+
+    if (listing) {
+        // Clean up all images from Cloudinary
+        for (const img of listing.images) {
+            await deleteImage(img.filename);
+        }
+        await Listing.findByIdAndDelete(id);
+    }
+
     req.flash("success", "Listing deleted!");
     res.redirect("/listings");
 };

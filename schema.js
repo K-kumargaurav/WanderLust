@@ -8,11 +8,9 @@ module.exports.listingSchema = Joi.object({
         location:    Joi.string().trim().min(2).max(200).required(),
         country:     Joi.string().trim().min(2).max(100).required(),
         price:       Joi.number().integer().min(0).max(10_000_000).required(),
-        // image is optional here because multer handles it separately;
-        // when present (e.g. edit form sending the existing URL) it must be a URI.
-        image:       Joi.string().uri().allow("", null).optional(),
         category:    Joi.string().valid(...LISTING_CATEGORIES).allow("", null).optional(),
     }).required(),
+    _csrf: Joi.string().optional(),
 });
 
 module.exports.reviewSchema = Joi.object({
@@ -20,4 +18,5 @@ module.exports.reviewSchema = Joi.object({
         rating:  Joi.number().integer().min(1).max(5).required(),
         comment: Joi.string().trim().min(1).max(1000).required(),
     }).required(),
+    _csrf: Joi.string().optional(),
 });

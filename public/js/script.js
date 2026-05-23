@@ -49,4 +49,147 @@ document.querySelectorAll('.filter-item').forEach(item => {
     document.querySelectorAll('.filter-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
   });
-}); 
+});
+
+// ─── Image Upload Preview ──────────────────────────────────────────────────
+const imageInput = document.getElementById('images');
+const previewContainer = document.getElementById('imagePreviewContainer');
+
+if (imageInput && previewContainer) {
+  imageInput.addEventListener('change', () => {
+    previewContainer.innerHTML = '';
+    const files = Array.from(imageInput.files).slice(0, 3);
+
+    if (imageInput.files.length > 3) {
+      const dt = new DataTransfer();
+      files.forEach(f => dt.items.add(f));
+      imageInput.files = dt.files;
+    }
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const div = document.createElement('div');
+        div.className = 'image-preview-item';
+        div.innerHTML = `<img src="${e.target.result}" alt="Preview" />`;
+        previewContainer.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+// ─── Listing Preview Modal ─────────────────────────────────────────────────
+const previewBtn    = document.getElementById('previewBtn');
+const previewModal  = document.getElementById('previewModal');
+const closePreview  = document.getElementById('closePreview');
+const closePreview2 = document.getElementById('closePreview2');
+const confirmSubmit = document.getElementById('confirmSubmit');
+const newListingForm = document.getElementById('newListingForm');
+
+if (previewBtn && previewModal && newListingForm) {
+  previewBtn.addEventListener('click', () => {
+    const form = newListingForm;
+
+    // Populate preview data
+    document.getElementById('previewTitle').textContent =
+      form.querySelector('[name="listing[title]"]').value || 'Untitled';
+
+    const loc = form.querySelector('[name="listing[location]"]').value || '';
+    const country = form.querySelector('[name="listing[country]"]').value || '';
+    document.getElementById('previewLocation').innerHTML =
+      `<i class="fa-solid fa-location-dot" style="color:var(--terra);margin-right:4px"></i>${loc}${country ? ', ' + country : ''}`;
+
+    document.getElementById('previewDescription').textContent =
+      form.querySelector('[name="listing[description]"]').value || '';
+
+    const price = form.querySelector('[name="listing[price]"]').value || '0';
+    document.getElementById('previewPrice').innerHTML =
+      `&#8377;${parseInt(price).toLocaleString('en-IN')} <span style="font-size:0.9rem;color:var(--charcoal-60);font-family:var(--font-body)">/ night</span>`;
+
+    const cat = form.querySelector('[name="listing[category]"]').value;
+    const catEl = document.getElementById('previewCategory');
+    if (cat) {
+      catEl.textContent = cat;
+      catEl.style.display = 'inline-block';
+    } else {
+      catEl.style.display = 'none';
+    }
+
+    // Preview images
+    const previewImagesEl = document.getElementById('previewImages');
+    previewImagesEl.innerHTML = '';
+    const fileInput = form.querySelector('[name="listing[images]"]');
+    if (fileInput && fileInput.files.length > 0) {
+      Array.from(fileInput.files).slice(0, 3).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = 'Preview';
+          previewImagesEl.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    previewModal.style.display = 'flex';
+  });
+
+  closePreview.addEventListener('click', () => {
+    previewModal.style.display = 'none';
+  });
+
+  closePreview2.addEventListener('click', () => {
+    previewModal.style.display = 'none';
+  });
+
+  confirmSubmit.addEventListener('click', () => {
+    newListingForm.submit();
+  });
+
+  previewModal.addEventListener('click', (e) => {
+    if (e.target === previewModal) {
+      previewModal.style.display = 'none';
+    }
+  });
+}
+
+// ─── Wishlist Toggle ───────────────────────────────────────────────────────
+document.querySelectorAll('.wishlist-btn').forEach(btn => {
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const listingId = btn.dataset.listingId;
+    const csrf = btn.dataset.csrf;
+
+    try {
+      const res = await fetch(`/wishlist/${listingId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-Token': csrf,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const icon = btn.querySelector('i');
+        if (data.wishlisted) {
+          btn.classList.add('wishlisted');
+          icon.classList.remove('fa-regular');
+          icon.classList.add('fa-solid');
+        } else {
+          btn.classList.remove('wishlisted');
+          icon.classList.remove('fa-solid');
+          icon.classList.add('fa-regular');
+        }
+      }
+    } catch (err) {
+      // Fallback: reload
+      window.location.href = `/wishlist/${listingId}`;
+    }
+  });
+});

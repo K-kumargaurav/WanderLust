@@ -1,23 +1,53 @@
 "use strict";
 
+const crypto = require("crypto");
 const User = require("../models/user");
+const Listing = require("../models/listing");
+const Review = require("../models/review");
 const expressErr = require("../utils/expressErr");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Primitive email format check (Joi/validator handles deep validation on the
- * model side; this is a fast-fail guard before touching the DB).
- * @param {string} email
- * @returns {boolean}
- */
 function isValidEmailFormat(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+/**
+ * Send a password reset email. Uses nodemailer.
+ * Requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS env vars.
+ */
+async function sendResetEmail(email, token, host) {
+    const nodemailer = require("nodemailer");
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || "smtp.gmail.com",
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: false,
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+
+    const resetUrl = `http://${host}/reset/${token}`;
+
+    await transporter.sendMail({
+        from: `"WanderLust" <${process.env.SMTP_USER || "noreply@wanderlust.com"}>`,
+        to: email,
+        subject: "WanderLust — Password Reset",
+        html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+                <h2>Password Reset</h2>
+                <p>You requested a password reset for your WanderLust account.</p>
+                <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#C0602A;color:white;text-decoration:none;border-radius:8px">Reset Password</a></p>
+                <p style="color:#888;font-size:0.85rem">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+            </div>
+        `,
+    });
+}
+
 // ─── SIGNUP FORM ──────────────────────────────────────────────────────────────
 module.exports.renderSignupForm = (req, res) => {
-    // Redirect authenticated users away from the signup page
     if (req.isAuthenticated()) {
         return res.redirect("/listings");
     }
@@ -29,7 +59,6 @@ module.exports.signup = async (req, res, next) => {
     try {
         const { email, password: rawPassword } = req.body;
 
-        // ── Input validation ────────────────────────────────────────────────
         if (!email || !rawPassword) {
             req.flash("error", "Email and password are required.");
             return res.redirect("/signup");
@@ -48,26 +77,18 @@ module.exports.signup = async (req, res, next) => {
             return res.redirect("/signup");
         }
 
-        // ── Explicit duplicate check ────────────────────────────────────────
-        // passport-local-mongoose throws "UserExistsError" on duplicates, but
-        // checking first lets us give a cleaner UX message without relying on
-        // error string matching.
         const existing = await User.findOne({ email: trimmedEmail });
         if (existing) {
             req.flash("error", "An account with that email already exists.");
             return res.redirect("/signup");
         }
 
-        // ── Register user ───────────────────────────────────────────────────
-        // User.register(user, password) hashes the password via pbkdf2 and
-        // saves the document atomically.
         const newUser = new User({
             email: trimmedEmail,
             username: trimmedEmail,
         });
         const registeredUser = await User.register(newUser, password);
 
-        // ── Auto-login after registration ───────────────────────────────────
         req.login(registeredUser, (err) => {
             if (err) return next(err);
             req.flash("success", "Welcome to WanderLust! Your account has been created.");
@@ -76,7 +97,6 @@ module.exports.signup = async (req, res, next) => {
         });
 
     } catch (err) {
-        // passport-local-mongoose error messages are user-safe; forward them.
         req.flash("error", err.message || "Signup failed. Please try again.");
         return res.redirect("/signup");
     }
@@ -84,21 +104,14 @@ module.exports.signup = async (req, res, next) => {
 
 // ─── LOGIN FORM ───────────────────────────────────────────────────────────────
 module.exports.renderLoginForm = (req, res) => {
-    // Redirect authenticated users away from the login page
     if (req.isAuthenticated()) {
         return res.redirect("/listings");
     }
     res.render("users/login.ejs");
 };
 
-// ─── LOGIN ─────────────────────────────────────────────────────────────────────
-// The actual authentication is handled by the custom passport callback in
-// route/user.js. This stub exists only to satisfy the route definition pattern.
-// It is never called because the route middleware always resolves before it.
-module.exports.login = (req, res) => {
-    // Intentionally unreachable — passport callback in route/user.js handles
-    // the success/failure response before this controller action is reached.
-};
+// ─── LOGIN (handled by passport in route) ─────────────────────────────────────
+module.exports.login = (req, res) => {};
 
 // ─── LOGOUT ───────────────────────────────────────────────────────────────────
 module.exports.logout = (req, res, next) => {
@@ -107,4 +120,138 @@ module.exports.logout = (req, res, next) => {
         req.flash("success", "You have been logged out. See you soon!");
         res.redirect("/listings");
     });
+};
+
+// ─── PROFILE ──────────────────────────────────────────────────────────────────
+module.exports.renderProfile = async (req, res) => {
+    const user = await User.findById(req.user._id);
+    const myListings = await Listing.find({ owner: req.user._id }).sort({ createdAt: -1 });
+    const myReviews  = await Review.find({ author: req.user._id }).sort({ createdAt: -1 });
+
+    // Populate listing info for each review
+    const reviewsWithListings = [];
+    for (const review of myReviews) {
+        const listing = await Listing.findOne({ reviews: review._id });
+        reviewsWithListings.push({ review, listing });
+    }
+
+    res.render("users/profile.ejs", {
+        user,
+        myListings,
+        reviewsWithListings,
+    });
+};
+
+// ─── FORGOT PASSWORD FORM ─────────────────────────────────────────────────────
+module.exports.renderForgotForm = (req, res) => {
+    res.render("users/forgot-password.ejs");
+};
+
+// ─── FORGOT PASSWORD ──────────────────────────────────────────────────────────
+module.exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        req.flash("error", "Please enter your email address.");
+        return res.redirect("/forgot-password");
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+
+    // Always show success message to prevent email enumeration
+    if (!user) {
+        req.flash("success", "If an account with that email exists, a reset link has been sent.");
+        return res.redirect("/login");
+    }
+
+    // Generate reset token
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken   = crypto.createHash("sha256").update(token).digest("hex");
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    try {
+        await sendResetEmail(user.email, token, req.headers.host);
+        req.flash("success", "If an account with that email exists, a reset link has been sent.");
+    } catch (err) {
+        console.error("Email send error:", err.message);
+        req.flash("error", "Could not send reset email. Please try again later.");
+    }
+
+    return res.redirect("/login");
+};
+
+// ─── RESET PASSWORD FORM ──────────────────────────────────────────────────────
+module.exports.renderResetForm = async (req, res) => {
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+    const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        req.flash("error", "Password reset link is invalid or has expired.");
+        return res.redirect("/forgot-password");
+    }
+
+    res.render("users/reset-password.ejs", { token: req.params.token });
+};
+
+// ─── RESET PASSWORD ───────────────────────────────────────────────────────────
+module.exports.resetPassword = async (req, res) => {
+    const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+    const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        req.flash("error", "Password reset link is invalid or has expired.");
+        return res.redirect("/forgot-password");
+    }
+
+    const { password } = req.body;
+    if (!password || password.trim().length < 8) {
+        req.flash("error", "Password must be at least 8 characters.");
+        return res.redirect(`/reset/${req.params.token}`);
+    }
+
+    await user.setPassword(password.trim());
+    user.resetPasswordToken   = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    req.login(user, (err) => {
+        if (err) {
+            req.flash("error", "Password reset succeeded but auto-login failed. Please log in.");
+            return res.redirect("/login");
+        }
+        req.flash("success", "Your password has been reset successfully!");
+        return res.redirect("/listings");
+    });
+};
+
+// ─── WISHLIST ─────────────────────────────────────────────────────────────────
+module.exports.toggleWishlist = async (req, res) => {
+    const { id } = req.params;
+    const user = await User.findById(req.user._id);
+
+    const idx = user.wishlist.indexOf(id);
+    if (idx === -1) {
+        user.wishlist.push(id);
+    } else {
+        user.wishlist.splice(idx, 1);
+    }
+    await user.save();
+
+    // For AJAX requests, return JSON
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+        return res.json({ wishlisted: idx === -1 });
+    }
+
+    res.redirect("back");
+};
+
+module.exports.renderWishlist = async (req, res) => {
+    const user = await User.findById(req.user._id).populate("wishlist");
+    res.render("users/wishlist.ejs", { wishlistListings: user.wishlist });
 };

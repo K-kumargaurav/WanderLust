@@ -3,7 +3,6 @@
 <div class="auth-page">
   <div class="auth-card">
 
-    <!-- Header -->
     <div class="auth-card-header">
       <div class="auth-logo">
         <i class="fa-regular fa-compass"></i>
@@ -12,17 +11,14 @@
       <p class="auth-subtitle">Log in to continue your journey</p>
     </div>
 
-    <!--
-      name="email"    → matches usernameField: "email" in passport-local-mongoose
-      name="password" → standard passport-local field
-      autocomplete    → assists password managers
-    -->
     <form
       action="/login"
       method="POST"
       class="needs-validation"
       novalidate
     >
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
       <!-- Email -->
       <div class="form-group">
         <label for="login-email" class="form-label">Email</label>
@@ -53,7 +49,6 @@
             autocomplete="current-password"
             style="padding-right:2.75rem"
           />
-          <!-- Toggle password visibility -->
           <button
             type="button"
             class="pwd-toggle"
@@ -82,7 +77,10 @@
       </button>
     </form>
 
-    <p class="auth-footer-text" style="margin-top:1.25rem">
+    <p class="auth-footer-text" style="margin-top:1rem">
+      <a href="/forgot-password">Forgot password?</a>
+    </p>
+    <p class="auth-footer-text" style="margin-top:0.5rem">
       Don't have an account? <a href="/signup">Sign up</a>
     </p>
 

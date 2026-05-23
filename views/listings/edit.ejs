@@ -1,9 +1,14 @@
-<%- include("../includes/navbar") %>
+<% layout("/layouts/boilerplate") %>
 
-<div class="row mt-4">
-  <div class="col-8 offset-2">
-    <h3>Edit Listing</h3>
+<div class="form-page">
+  <div style="margin-bottom:0.25rem">
+    <a href="/listings/<%= listing._id %>" style="font-size:0.8rem;color:var(--sand);text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem">
+      <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i> Back to listing
+    </a>
+  </div>
+  <h1 class="form-page-title">Edit Listing</h1>
 
+  <div class="form-card">
     <form
       method="POST"
       action="/listings/<%= listing._id %>?_method=PUT"
@@ -11,9 +16,10 @@
       class="needs-validation"
       novalidate
     >
-      <div class="mb-3">
-        <label class="form-label">Title</label>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
+      <div class="form-group">
+        <label class="form-label">Title</label>
         <input
           type="text"
           name="listing[title]"
@@ -23,9 +29,8 @@
         />
       </div>
 
-      <div class="mb-3">
+      <div class="form-group">
         <label class="form-label">Description</label>
-
         <textarea
           name="listing[description]"
           class="form-control"
@@ -33,43 +38,61 @@
         ><%= listing.description %></textarea>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Current Image</label>
+      <!-- Current Images -->
+      <% if (listing.images && listing.images.length > 0) { %>
+        <div class="form-group">
+          <label class="form-label">Current Images</label>
+          <div class="edit-images-grid">
+            <% for (const img of listing.images) { %>
+              <div class="edit-image-item">
+                <img src="<%= img.url.replace('/upload', '/upload/w_250') %>" class="rounded" style="height:120px;object-fit:cover" />
+                <label class="edit-image-delete">
+                  <input type="checkbox" name="deleteImages[]" value="<%= img.filename %>" />
+                  <span>Remove</span>
+                </label>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
 
-        <br />
-
-        <img
-          src="<%= originalImageUrl %>"
-          style="height: 220px"
-          class="rounded"
-        />
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label">Upload New Image</label>
-
+      <!-- Upload New Images -->
+      <div class="form-group">
+        <label class="form-label">Add New Images <span style="color:var(--sand);font-weight:400;text-transform:none">(up to 3 total)</span></label>
         <input
           type="file"
-          name="listing[image]"
-          class="form-control"
+          name="listing[images]"
+          class="form-control form-control-file"
+          accept="image/png, image/jpeg, image/jpg"
+          multiple
         />
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Price</label>
-
-        <input
-          type="number"
-          name="listing[price]"
-          class="form-control"
-          value="<%= listing.price %>"
-          required
-        />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Price (&#8377;/night)</label>
+          <input
+            type="number"
+            name="listing[price]"
+            class="form-control"
+            value="<%= listing.price %>"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input
+            type="text"
+            name="listing[country]"
+            class="form-control"
+            value="<%= listing.country %>"
+            required
+          />
+        </div>
       </div>
 
-      <div class="mb-3">
+      <div class="form-group">
         <label class="form-label">Location</label>
-
         <input
           type="text"
           name="listing[location]"
@@ -79,21 +102,21 @@
         />
       </div>
 
-      <div class="mb-3">
-        <label class="form-label">Country</label>
-
-        <input
-          type="text"
-          name="listing[country]"
-          class="form-control"
-          value="<%= listing.country %>"
-          required
-        />
+      <!-- Category -->
+      <div class="form-group">
+        <label class="form-label">Category <span style="color:var(--sand);font-weight:400;text-transform:none">(optional)</span></label>
+        <select name="listing[category]" class="form-control">
+          <option value="">— None —</option>
+          <% for (const cat of categories) { %>
+            <option value="<%= cat %>" <%= listing.category === cat ? 'selected' : '' %>><%= cat %></option>
+          <% } %>
+        </select>
       </div>
 
-      <button class="btn btn-dark">
-        Update Listing
-      </button>
+      <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+        <button type="submit" class="btn btn-primary">Update Listing</button>
+        <a href="/listings/<%= listing._id %>" class="btn btn-outline">Cancel</a>
+      </div>
     </form>
   </div>
 </div>

@@ -12,6 +12,14 @@ const userSchema = new Schema({
         lowercase: true,
         trim: true,
     },
+    wishlist: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Listing",
+        },
+    ],
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
 });
 
 userSchema.plugin(passportLocalMongoose, {

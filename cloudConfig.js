@@ -12,15 +12,27 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "WanderLust_DEV",
     allowedFormats: ["png", "jpg", "jpeg"],
-
-        transformation: [
-            {
-                width: 2000,
-                crop: "limit",
-                quality: "auto",
-            },
-        ],
+    transformation: [
+      {
+        width: 2000,
+        crop: "limit",
+        quality: "auto",
+      },
+    ],
   },
 });
 
-module.exports = { cloudinary, storage };
+/**
+ * Delete an image from Cloudinary by its public ID (filename).
+ * Silently logs errors — a failed cleanup should not crash the request.
+ */
+async function deleteImage(filename) {
+  if (!filename) return;
+  try {
+    await cloudinary.uploader.destroy(filename);
+  } catch (err) {
+    console.error("Cloudinary delete error:", err.message);
+  }
+}
+
+module.exports = { cloudinary, storage, deleteImage };

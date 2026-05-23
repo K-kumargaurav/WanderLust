@@ -1,6 +1,6 @@
 <% layout("/layouts/boilerplate") %>
 
-<!-- Safe data bridge: map.js reads these attributes, never interpolated inside <script> -->
+<!-- Safe data bridge for map.js -->
 <div id="map-data"
      data-token="<%= process.env.MAP_TOKEN %>"
      data-listing="<%= encodeURIComponent(JSON.stringify(listing)) %>"
@@ -25,11 +25,31 @@
       </span>
     <% } %>
   </div>
-  <img
-    src="<%= listing.image.url %>"
-    alt="<%= listing.title %>"
-    class="show-hero-img"
-  />
+
+  <!-- Image Gallery -->
+  <% if (listing.images && listing.images.length > 1) { %>
+    <div class="show-gallery">
+      <div class="show-gallery-main">
+        <img src="<%= listing.images[0].url %>" alt="<%= listing.title %>" id="gallery-main-img" />
+      </div>
+      <div class="show-gallery-thumbs">
+        <% listing.images.forEach((img, i) => { %>
+          <img
+            src="<%= img.url %>"
+            alt="Photo <%= i + 1 %>"
+            class="gallery-thumb <%= i === 0 ? 'active' : '' %>"
+            onclick="document.getElementById('gallery-main-img').src=this.src; document.querySelectorAll('.gallery-thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');"
+          />
+        <% }) %>
+      </div>
+    </div>
+  <% } else { %>
+    <img
+      src="<%= listing.images && listing.images.length > 0 ? listing.images[0].url : '' %>"
+      alt="<%= listing.title %>"
+      class="show-hero-img"
+    />
+  <% } %>
 </div>
 
 <!-- Two-column layout -->
@@ -71,6 +91,7 @@
           <i class="fa-regular fa-pen-to-square"></i> Edit Listing
         </a>
         <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <button type="submit" class="btn btn-danger">
             <i class="fa-regular fa-trash-can"></i> Delete
           </button>
@@ -98,6 +119,8 @@
             novalidate
             class="needs-validation"
           >
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
             <!-- Star Rating -->
             <div class="form-group">
               <label class="form-label">Your Rating</label>
@@ -144,15 +167,21 @@
       <% if(listing.reviews && listing.reviews.length > 0) { %>
         <div class="reviews-grid">
           <% for(let review of listing.reviews) { %>
-            <div class="review-card">
+            <div class="review-card" id="review-<%= review._id %>">
 
-              <!-- Delete button (only for review author) -->
+              <!-- Review actions (only for review author) -->
               <% if(currUser && review.author && currUser._id.equals(review.author._id)) { %>
-                <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="display:inline">
-                  <button type="submit" class="review-delete-btn" title="Delete review">
-                    <i class="fa-solid fa-xmark"></i>
+                <div class="review-actions">
+                  <button class="review-edit-btn" title="Edit review" onclick="toggleEditReview('<%= review._id %>')">
+                    <i class="fa-solid fa-pen"></i>
                   </button>
-                </form>
+                  <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="review-delete-btn" title="Delete review">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </form>
+                </div>
               <% } %>
 
               <div class="review-author">
@@ -160,13 +189,43 @@
               </div>
 
               <!-- Star display -->
-              <div class="star-display-group">
+              <div class="star-display-group" id="stars-<%= review._id %>">
                 <% for(let i = 1; i <= 5; i++) { %>
                   <i class="<%= i <= review.rating ? 'fas' : 'far' %> fa-star"></i>
                 <% } %>
               </div>
 
-              <p class="review-comment"><%= review.comment %></p>
+              <p class="review-comment" id="comment-<%= review._id %>"><%= review.comment %></p>
+
+              <!-- Inline edit form (hidden by default) -->
+              <% if(currUser && review.author && currUser._id.equals(review.author._id)) { %>
+                <form
+                  class="review-edit-form"
+                  id="edit-form-<%= review._id %>"
+                  action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=PUT"
+                  method="POST"
+                  style="display:none"
+                >
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <div class="form-group">
+                    <label class="form-label">Rating</label>
+                    <select name="review[rating]" class="form-control" style="width:auto">
+                      <% for (let i = 5; i >= 1; i--) { %>
+                        <option value="<%= i %>" <%= i === review.rating ? 'selected' : '' %>><%= i %> star<%= i > 1 ? 's' : '' %></option>
+                      <% } %>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Comment</label>
+                    <textarea name="review[comment]" class="form-control" rows="2" required><%= review.comment %></textarea>
+                  </div>
+                  <div style="display:flex;gap:0.5rem">
+                    <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="toggleEditReview('<%= review._id %>')">Cancel</button>
+                  </div>
+                </form>
+              <% } %>
+
             </div>
           <% } %>
         </div>
@@ -212,5 +271,22 @@
 
   </div>
 </div>
+
+<script>
+function toggleEditReview(id) {
+  const form = document.getElementById('edit-form-' + id);
+  const comment = document.getElementById('comment-' + id);
+  const stars = document.getElementById('stars-' + id);
+  if (form.style.display === 'none') {
+    form.style.display = 'block';
+    comment.style.display = 'none';
+    stars.style.display = 'none';
+  } else {
+    form.style.display = 'none';
+    comment.style.display = 'block';
+    stars.style.display = 'inline-flex';
+  }
+}
+</script>
 
 <script src="/js/map.js"></script>

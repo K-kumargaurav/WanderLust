@@ -11,12 +11,15 @@
 
   <div class="form-card">
     <form
+      id="newListingForm"
       action="/listings"
       method="POST"
       novalidate
       class="needs-validation"
       enctype="multipart/form-data"
     >
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
       <!-- Title -->
       <div class="form-group">
         <label for="title" class="form-label">Title</label>
@@ -45,19 +48,23 @@
         <div class="invalid-feedback">Description is required.</div>
       </div>
 
-      <!-- Image Upload -->
+      <!-- Image Upload (up to 3) -->
       <div class="form-group">
-        <label for="image" class="form-label">Listing Photo</label>
+        <label for="images" class="form-label">Listing Photos <span style="color:var(--sand);font-weight:400;text-transform:none">(up to 3)</span></label>
         <input
-          id="image"
+          id="images"
           type="file"
-          name="listing[image]"
+          name="listing[images]"
           class="form-control form-control-file"
           accept="image/png, image/jpeg, image/jpg"
+          multiple
+          required
         />
         <p style="font-size:0.75rem;color:var(--sand);margin-top:0.3rem">
-          Accepted: JPG, JPEG, PNG &mdash; max 10 MB
+          Accepted: JPG, JPEG, PNG &mdash; max 5 MB each, up to 3 photos
         </p>
+        <!-- Image previews -->
+        <div id="imagePreviewContainer" class="image-preview-grid"></div>
       </div>
 
       <!-- Price + Country -->
@@ -107,19 +114,50 @@
       <div class="form-group">
         <label for="category" class="form-label">Category <span style="color:var(--sand);font-weight:400;text-transform:none">(optional)</span></label>
         <select id="category" name="listing[category]" class="form-control">
-          <option value="">— None / Trending only —</option>
+          <option value="">— None —</option>
           <% for (const cat of categories) { %>
-            <option value="<%= cat %>"><%= cat.charAt(0).toUpperCase() + cat.slice(1) %></option>
+            <option value="<%= cat %>"><%= cat %></option>
           <% } %>
         </select>
       </div>
 
       <div style="display:flex;gap:0.75rem;align-items:center;margin-top:0.5rem">
+        <button type="button" class="btn btn-outline" id="previewBtn">
+          <i class="fa-solid fa-eye"></i> Preview
+        </button>
         <button type="submit" class="btn btn-primary">
           <i class="fa-solid fa-plus"></i> Add Listing
         </button>
         <a href="/listings" class="btn btn-outline">Cancel</a>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="previewModal" class="preview-modal" style="display:none">
+  <div class="preview-modal-content">
+    <div class="preview-modal-header">
+      <h2 style="font-family:var(--font-display);font-weight:400;font-size:1.5rem">Listing Preview</h2>
+      <button type="button" class="preview-modal-close" id="closePreview">&times;</button>
+    </div>
+    <div class="preview-modal-body">
+      <div id="previewImages" class="preview-images"></div>
+      <h3 id="previewTitle" style="font-family:var(--font-display);font-size:1.75rem;font-weight:400;margin:1rem 0 0.5rem"></h3>
+      <p id="previewLocation" style="color:var(--charcoal-60);font-size:0.875rem;margin-bottom:1rem">
+        <i class="fa-solid fa-location-dot" style="color:var(--terra);margin-right:4px"></i>
+      </p>
+      <p id="previewDescription" style="line-height:1.75;margin-bottom:1rem"></p>
+      <div style="display:flex;gap:1rem;align-items:center">
+        <span id="previewPrice" style="font-family:var(--font-display);font-size:1.5rem"></span>
+        <span id="previewCategory" class="listing-card-badge" style="position:static"></span>
+      </div>
+    </div>
+    <div class="preview-modal-footer">
+      <button type="button" class="btn btn-outline" id="closePreview2">Edit</button>
+      <button type="button" class="btn btn-primary" id="confirmSubmit">
+        <i class="fa-solid fa-check"></i> Confirm &amp; Create
+      </button>
+    </div>
   </div>
 </div>
