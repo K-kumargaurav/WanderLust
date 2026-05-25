@@ -1,0 +1,376 @@
+<% layout("/layouts/boilerplate") %>
+
+<%
+  const dateOpts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-IN', dateOpts);
+  }
+  const shortOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtShort(d) {
+    return new Date(d).toLocaleDateString('en-IN', shortOpts);
+  }
+%>
+
+<style>
+  /* ─── Host Bookings page ────────────────────────────────────────── */
+  .host-bookings-page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .host-bookings-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .host-bookings-back:hover { color: var(--terra); }
+
+  .host-bookings-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin-bottom: 0.25rem;
+  }
+
+  .host-bookings-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 2rem;
+  }
+
+  /* ─── Table (desktop) ───────────────────────────────────────────── */
+  .host-table-wrap {
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--white);
+  }
+
+  .host-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  .host-table thead {
+    background: var(--ivory-dark);
+  }
+
+  .host-table th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+
+  .host-table td {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--charcoal-20);
+    color: var(--charcoal);
+    vertical-align: middle;
+  }
+
+  .host-table tbody tr {
+    transition: background 0.15s;
+  }
+  .host-table tbody tr:hover {
+    background: var(--ivory);
+  }
+
+  .host-table-listing {
+    color: var(--charcoal);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .host-table-listing:hover { color: var(--terra); }
+
+  .host-table-location {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--sand);
+    font-weight: 400;
+  }
+
+  .host-table-guest {
+    font-weight: 500;
+  }
+
+  .host-table-price {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .host-table-gst {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: var(--charcoal-60);
+  }
+
+  .host-table-booked {
+    font-size: 0.78rem;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+
+  .host-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .host-badge--confirmed {
+    background: #e6f4ea;
+    color: #1a7f37;
+  }
+  .host-badge--pending {
+    background: #fff4e5;
+    color: #b35c00;
+  }
+
+  /* ─── Cards (mobile) ────────────────────────────────────────────── */
+  .host-cards {
+    display: none;
+  }
+
+  .host-card {
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-md);
+    background: var(--white);
+    padding: 1rem 1.15rem;
+    margin-bottom: 0.75rem;
+    transition: box-shadow 0.2s;
+  }
+  .host-card:hover { box-shadow: var(--shadow-sm); }
+
+  .host-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .host-card-listing {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .host-card-listing:hover { color: var(--terra); }
+
+  .host-card-location {
+    font-size: 0.78rem;
+    color: var(--sand);
+    margin-bottom: 0.4rem;
+  }
+
+  .host-card-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--charcoal);
+    padding: 0.2rem 0;
+  }
+
+  .host-card-label {
+    color: var(--charcoal-60);
+  }
+
+  .host-card-divider {
+    border: none;
+    border-top: 1px solid var(--charcoal-20);
+    margin: 0.5rem 0;
+  }
+
+  /* ─── Responsive ────────────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .host-table-wrap { display: none; }
+    .host-cards { display: block; }
+  }
+</style>
+
+<div class="host-bookings-page">
+
+  <!-- Header -->
+  <a href="/listings" class="host-bookings-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to listings
+  </a>
+  <h1 class="host-bookings-title">Incoming Bookings</h1>
+  <p class="host-bookings-subtitle">
+    <%= bookings.length %> booking<%= bookings.length !== 1 ? 's' : '' %> across your listings
+  </p>
+
+  <% if (bookings.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-regular fa-calendar-xmark"></i>
+      <h2>No bookings on your listings yet</h2>
+      <p>
+        When guests book your listings, they'll appear here.
+        <a href="/listings">View your listings</a>.
+      </p>
+    </div>
+  <% } else { %>
+
+    <!-- Desktop table -->
+    <div class="host-table-wrap">
+      <table class="host-table">
+        <thead>
+          <tr>
+            <th>Listing</th>
+            <th>Guest</th>
+            <th>Check-in</th>
+            <th>Check-out</th>
+            <th>Nights</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Actions</th>
+            <th>Booked On</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const b of bookings) { %>
+            <tr>
+              <td>
+                <a href="/listings/<%= b.listing._id %>" class="host-table-listing">
+                  <%= b.listing.title %>
+                </a>
+                <span class="host-table-location"><%= b.listing.location %></span>
+              </td>
+              <td class="host-table-guest"><%= b.guest.username %></td>
+              <td><%= fmtShort(b.checkIn) %></td>
+              <td><%= fmtShort(b.checkOut) %></td>
+              <td><%= (b.nights ?? 1) %></td>
+              <td class="host-table-price">
+                &#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %>
+                <% if (b.gstAmount != null) { %>
+                  <span class="host-table-gst">incl. &#8377;<%= (b.gstAmount ?? 0).toLocaleString("en-IN") %> GST</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="host-badge host-badge--<%= b.status %>"><%= b.status %></span>
+              </td>
+              <td>
+                <% if (b.status === 'pending') { %>
+                  <form action="/bookings/<%= b._id %>/confirm?_method=PUT" method="POST" style="display:inline">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="button" class="btn btn-primary btn-sm confirm-host-btn"
+                            data-booking-id="<%= b._id %>"
+                            data-guest="<%= b.guest.username %>"
+                            data-listing="<%= b.listing.title %>"
+                            data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
+                            data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>">
+                      <i class="fa-solid fa-check"></i> Accept
+                    </button>
+                  </form>
+                  <form action="/bookings/<%= b._id %>/reject?_method=PUT" method="POST" style="display:inline" id="reject-form-<%= b._id %>">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="button" class="btn btn-danger btn-sm reject-host-btn"
+                            data-booking-id="<%= b._id %>"
+                            data-guest="<%= b.guest.username %>"
+                            data-listing="<%= b.listing.title %>">
+                      <i class="fa-solid fa-xmark"></i> Reject
+                    </button>
+                  </form>
+                <% } %>
+              </td>
+              <td class="host-table-booked"><%= fmtShort(b.createdAt) %></td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="host-cards">
+      <% for (const b of bookings) { %>
+        <div class="host-card">
+          <div class="host-card-top">
+            <div>
+              <a href="/listings/<%= b.listing._id %>" class="host-card-listing">
+                <%= b.listing.title %>
+              </a>
+              <div class="host-card-location">
+                <i class="fa-solid fa-location-dot" style="margin-right:3px"></i>
+                <%= b.listing.location %>
+              </div>
+            </div>
+            <span class="host-badge host-badge--<%= b.status %>"><%= b.status %></span>
+          </div>
+
+          <div class="host-card-row">
+            <span class="host-card-label">Guest</span>
+            <span><%= b.guest.username %></span>
+          </div>
+          <div class="host-card-row">
+            <span class="host-card-label">Dates</span>
+            <span><%= fmtShort(b.checkIn) %> &rarr; <%= fmtShort(b.checkOut) %></span>
+          </div>
+          <div class="host-card-row">
+            <span class="host-card-label">Nights</span>
+            <span><%= (b.nights ?? 1) %></span>
+          </div>
+          <hr class="host-card-divider" />
+          <% if (b.subtotal != null) { %>
+            <div class="host-card-row">
+              <span class="host-card-label">Subtotal</span>
+              <span>&#8377;<%= (b.subtotal ?? b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+            </div>
+            <div class="host-card-row">
+              <span class="host-card-label">GST (18%)</span>
+              <span>&#8377;<%= (b.gstAmount ?? 0).toLocaleString("en-IN") %></span>
+            </div>
+          <% } %>
+          <div class="host-card-row">
+            <span class="host-card-label">Total</span>
+            <span style="font-weight:600">&#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+          </div>
+          <div class="host-card-row">
+            <span class="host-card-label">Booked on</span>
+            <span style="font-size:0.78rem;color:var(--charcoal-60)"><%= fmtShort(b.createdAt) %></span>
+          </div>
+          <% if (b.status === 'pending') { %>
+            <hr class="host-card-divider" />
+            <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+              <form action="/bookings/<%= b._id %>/confirm?_method=PUT" method="POST" style="display:inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="button" class="btn btn-primary btn-sm confirm-host-btn"
+                        data-booking-id="<%= b._id %>"
+                        data-guest="<%= b.guest.username %>"
+                        data-listing="<%= b.listing.title %>"
+                        data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
+                        data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>">
+                  <i class="fa-solid fa-check"></i> Accept
+                </button>
+              </form>
+              <form action="/bookings/<%= b._id %>/reject?_method=PUT" method="POST" style="display:inline" id="reject-form-mobile-<%= b._id %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="button" class="btn btn-danger btn-sm reject-host-btn"
+                        data-booking-id="<%= b._id %>"
+                        data-guest="<%= b.guest.username %>"
+                        data-listing="<%= b.listing.title %>">
+                  <i class="fa-solid fa-xmark"></i> Reject
+                </button>
+              </form>
+            </div>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+
+  <% } %>
+</div>

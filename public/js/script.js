@@ -248,6 +248,100 @@ document.querySelectorAll('.wishlist-btn').forEach(btn => {
   });
 });
 
+// ─── Confirmation Modal ──────────────────────────────────────────────────
+function showConfirmModal(title, body, confirmText = 'Confirm',
+                          confirmClass = 'btn-primary') {
+  return new Promise((resolve) => {
+    const modal      = document.getElementById('confirm-modal');
+    const titleEl    = document.getElementById('confirm-modal-title');
+    const bodyEl     = document.getElementById('confirm-modal-body');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn  = document.getElementById('confirm-modal-cancel');
+    const closeBtn   = document.getElementById('confirm-modal-close');
+
+    titleEl.textContent     = title;
+    bodyEl.innerHTML        = body;
+    confirmBtn.textContent  = confirmText;
+    confirmBtn.className    = `btn ${confirmClass}`;
+    modal.style.display     = 'flex';
+
+    function cleanup(result) {
+      modal.style.display = 'none';
+      confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+      cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+      resolve(result);
+    }
+
+    document.getElementById('confirm-modal-confirm')
+      .addEventListener('click', () => cleanup(true), { once: true });
+    document.getElementById('confirm-modal-cancel')
+      .addEventListener('click', () => cleanup(false), { once: true });
+    closeBtn.addEventListener('click', () => cleanup(false), { once: true });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) cleanup(false);
+    }, { once: true });
+  });
+}
+
+// ─── Cancel Booking Buttons ──────────────────────────────────────────────
+document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const { bookingId, listing, checkin, checkout } = btn.dataset;
+
+    const confirmed = await showConfirmModal(
+      'Cancel this booking?',
+      `<strong>${listing}</strong><br><br>
+       Check-in: <strong>${checkin}</strong><br>
+       Check-out: <strong>${checkout}</strong><br><br>
+       <span style="color:#c0392b">This action cannot be undone.</span>`,
+      'Yes, Cancel Booking',
+      'btn-danger'
+    );
+
+    if (confirmed) {
+      document.getElementById(`cancel-form-${bookingId}`).submit();
+    }
+  });
+});
+
+// ─── Host Confirm/Reject Booking Buttons ─────────────────────────────────
+document.querySelectorAll('.confirm-host-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const { bookingId, guest, listing, checkin, checkout } = btn.dataset;
+    const confirmed = await showConfirmModal(
+      'Accept this booking?',
+      `Guest: <strong>${guest}</strong><br>
+       Listing: <strong>${listing}</strong><br>
+       Check-in: <strong>${checkin}</strong><br>
+       Check-out: <strong>${checkout}</strong>`,
+      'Accept Booking',
+      'btn-primary'
+    );
+    if (confirmed) btn.closest('form').submit();
+  });
+});
+
+document.querySelectorAll('.reject-host-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const { bookingId, guest, listing } = btn.dataset;
+    const confirmed = await showConfirmModal(
+      'Reject this booking?',
+      `Guest: <strong>${guest}</strong><br>
+       Listing: <strong>${listing}</strong><br><br>
+       <span style="color:#c0392b">
+         The dates will be released for other guests.
+       </span>`,
+      'Reject Booking',
+      'btn-danger'
+    );
+    if (confirmed) {
+      const form = document.getElementById(`reject-form-${bookingId}`)
+                || document.getElementById(`reject-form-mobile-${bookingId}`);
+      if (form) form.submit();
+    }
+  });
+});
+
 // ─── Scroll to Top ────────────────────────────────────────────────────────
 const scrollTopBtn = document.getElementById('scroll-top-btn');
 if (scrollTopBtn) {

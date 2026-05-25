@@ -2,7 +2,7 @@
 
 <!-- Safe data bridge for map.js -->
 <div id="map-data"
-     data-token="<%= process.env.MAP_TOKEN %>"
+     data-token="<%= mapToken %>"
      data-listing="<%= encodeURIComponent(JSON.stringify(listing)) %>"
      style="display:none"
      aria-hidden="true">
@@ -252,7 +252,7 @@
   <div class="show-sidebar">
 
     <!-- Price Card -->
-    <div class="price-card">
+    <div class="price-card" data-price="<%= listing.price %>">
       <div class="price-card-amount">
         &#8377;<%= listing.price.toLocaleString("en-IN") %>
         <em>/ night</em>
@@ -262,15 +262,67 @@
         <%= listing.location %>, <%= listing.country %>
       </div>
       <% if(currUser) { %>
-        <button class="btn-reserve">Reserve Now</button>
+        <form id="bookingForm" action="/listings/<%= listing._id %>/bookings" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+          <div class="booking-date-grid">
+            <div class="booking-date-field">
+              <label for="checkIn" class="booking-date-label">Check-in</label>
+              <input
+                type="text"
+                name="booking[checkIn]"
+                id="checkIn"
+                placeholder="Select dates"
+                class="form-control"
+                required
+                readonly
+              />
+            </div>
+            <div class="booking-date-field">
+              <label class="booking-date-label">Check-out</label>
+              <input type="hidden" name="booking[checkOut]" id="checkOut" />
+              <input
+                type="text"
+                id="checkOutDisplay"
+                class="form-control"
+                placeholder="—"
+                readonly
+                tabindex="-1"
+              />
+            </div>
+          </div>
+
+          <div id="booking-summary" class="booking-summary" style="display:none">
+            <div class="booking-summary-row">
+              <span id="summary-subtotal-label"></span>
+              <span id="summary-subtotal-value"></span>
+            </div>
+            <div class="booking-summary-row" style="color:var(--charcoal-60)">
+              <span>GST (18%)</span>
+              <span id="summary-gst-value"></span>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--charcoal-20);margin:0.4rem 0" />
+            <div class="booking-summary-row" style="font-weight:600">
+              <span>Total</span>
+              <span id="summary-total"></span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-reserve" id="booking-submit" disabled>
+            Confirm Booking
+          </button>
+        </form>
+        <p style="font-size:0.72rem;color:var(--sand);text-align:center;margin-top:0.75rem">
+          You won't be charged yet
+        </p>
       <% } else { %>
         <a href="/login" class="btn-reserve" style="display:block;text-align:center;text-decoration:none">
           Log in to Reserve
         </a>
+        <p style="font-size:0.72rem;color:var(--sand);text-align:center;margin-top:0.75rem">
+          You won't be charged yet
+        </p>
       <% } %>
-      <p style="font-size:0.72rem;color:var(--sand);text-align:center;margin-top:0.75rem">
-        You won't be charged yet
-      </p>
     </div>
 
     <!-- Map -->
@@ -284,5 +336,175 @@
 
   </div>
 </div>
+
+<% if(currUser) { %>
+<style>
+  /* ─── Booking date picker ─────────────────────────────────────── */
+  .booking-date-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .booking-date-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--charcoal-60);
+    margin-bottom: 0.3rem;
+  }
+  .booking-date-field .form-control {
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .booking-summary {
+    background: var(--ivory-dark);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+  }
+  .booking-summary-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--charcoal);
+  }
+  .booking-summary-row #summary-total {
+    font-weight: 600;
+  }
+  .btn-reserve:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ─── Flatpickr terra theme overrides ─────────────────────────── */
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.selected.inRange,
+  .flatpickr-day.startRange.inRange,
+  .flatpickr-day.endRange.inRange,
+  .flatpickr-day.selected:focus,
+  .flatpickr-day.startRange:focus,
+  .flatpickr-day.endRange:focus,
+  .flatpickr-day.selected:hover,
+  .flatpickr-day.startRange:hover,
+  .flatpickr-day.endRange:hover,
+  .flatpickr-day.selected.prevMonthDay,
+  .flatpickr-day.startRange.prevMonthDay,
+  .flatpickr-day.endRange.prevMonthDay,
+  .flatpickr-day.selected.nextMonthDay,
+  .flatpickr-day.startRange.nextMonthDay,
+  .flatpickr-day.endRange.nextMonthDay {
+    background: var(--terra);
+    border-color: var(--terra);
+  }
+  .flatpickr-day.inRange {
+    background: var(--terra-pale);
+    border-color: var(--terra-pale);
+    box-shadow: -5px 0 0 var(--terra-pale), 5px 0 0 var(--terra-pale);
+  }
+  .flatpickr-day.today {
+    border-color: var(--terra-light);
+  }
+  .flatpickr-day.today:hover {
+    background: var(--terra-pale);
+    border-color: var(--terra-light);
+  }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const checkInInput    = document.getElementById("checkIn");
+    if (!checkInInput || typeof flatpickr === "undefined") return;
+
+    const checkOutInput       = document.getElementById("checkOut");
+    const checkOutDisplay     = document.getElementById("checkOutDisplay");
+    const summary             = document.getElementById("booking-summary");
+    const summarySubLabel     = document.getElementById("summary-subtotal-label");
+    const summarySubValue     = document.getElementById("summary-subtotal-value");
+    const summaryGstValue     = document.getElementById("summary-gst-value");
+    const summaryTotal        = document.getElementById("summary-total");
+    const submitBtn           = document.getElementById("booking-submit");
+    const pricePerNight       = Number(document.querySelector(".price-card").dataset.price);
+    const GST_RATE            = 0.18;
+
+    function formatDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    const bookingForm = document.getElementById("bookingForm");
+    const listingTitle = bookingForm.closest(".price-card")
+      .querySelector(".price-card-amount").textContent.trim();
+
+    bookingForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const checkIn  = checkInInput.value;
+      const checkOut = checkOutInput.value;
+      const nights   = Number(bookingForm.dataset.nights);
+      const total    = Number(bookingForm.dataset.total);
+
+      const confirmed = await showConfirmModal(
+        "Confirm your booking",
+        `<strong><%= listing.title.replace(/'/g, "\\'") %></strong><br><br>` +
+        `Check-in: <strong>${checkIn}</strong><br>` +
+        `Check-out: <strong>${checkOut}</strong><br>` +
+        `Duration: <strong>${nights} night${nights > 1 ? "s" : ""}</strong><br><br>` +
+        `Total (incl. GST): <strong>\u20b9${total.toLocaleString("en-IN")}</strong>`,
+        "Confirm Booking",
+        "btn-primary"
+      );
+
+      if (confirmed) e.target.submit();
+    });
+
+    flatpickr(checkInInput, {
+      mode: "range",
+      minDate: "today",
+      dateFormat: "Y-m-d",
+      showMonths: 1,
+      onChange(selectedDates) {
+        if (selectedDates.length === 2) {
+          const ciStr = formatDate(selectedDates[0]);
+          const coStr = formatDate(selectedDates[1]);
+
+          checkInInput.value  = ciStr;
+          checkOutInput.value = coStr;
+          checkOutDisplay.value = coStr;
+
+          const nights   = Math.ceil(
+            (selectedDates[1] - selectedDates[0]) / (1000 * 60 * 60 * 24)
+          );
+          const subtotal = nights * pricePerNight;
+          const gst      = Math.round(subtotal * GST_RATE);
+          const total    = subtotal + gst;
+
+          summarySubLabel.textContent = `\u20b9${pricePerNight.toLocaleString("en-IN")} \u00d7 ${nights} night${nights === 1 ? "" : "s"}`;
+          summarySubValue.textContent = `\u20b9${subtotal.toLocaleString("en-IN")}`;
+          summaryGstValue.textContent = `\u20b9${gst.toLocaleString("en-IN")}`;
+          summaryTotal.textContent    = `\u20b9${total.toLocaleString("en-IN")}`;
+          summary.style.display       = "block";
+          submitBtn.disabled          = false;
+
+          // Store for confirmation modal
+          const form = document.getElementById("bookingForm");
+          form.dataset.nights = nights;
+          form.dataset.total  = total;
+        } else {
+          checkOutInput.value     = "";
+          checkOutDisplay.value   = "";
+          summary.style.display   = "none";
+          submitBtn.disabled      = true;
+        }
+      },
+    });
+  });
+</script>
+<% } %>
 
 <script src="/js/map.js"></script>

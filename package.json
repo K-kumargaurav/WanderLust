@@ -10,7 +10,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "seed": "node init/index.js",
-    "test": "jest --forceExit --detectOpenHandles"
+    "test": "jest --forceExit --detectOpenHandles",
+    "migrate:bookings": "node init/migrate-bookings.js"
   },
   "author": "",
   "license": "ISC",

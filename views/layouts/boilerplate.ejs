@@ -14,6 +14,11 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+  <!-- Flatpickr -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -38,6 +43,27 @@
     <i class="fa-solid fa-arrow-up"></i>
   </button>
 
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" style="display:none" class="preview-modal">
+    <div class="preview-modal-content" style="max-width:440px">
+      <div class="preview-modal-header">
+        <h2 id="confirm-modal-title" style="font-family:var(--font-display);
+            font-weight:400;font-size:1.4rem"></h2>
+        <button class="preview-modal-close" id="confirm-modal-close">&times;</button>
+      </div>
+      <div class="preview-modal-body">
+        <p id="confirm-modal-body" style="color:var(--charcoal-60);
+            font-size:0.925rem;line-height:1.7"></p>
+      </div>
+      <div class="preview-modal-footer">
+        <button class="btn btn-outline" id="confirm-modal-cancel">Go Back</button>
+        <button class="btn btn-primary" id="confirm-modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>

@@ -1,0 +1,375 @@
+<% layout("/layouts/boilerplate") %>
+
+<%
+  const dateOpts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-IN', dateOpts);
+  }
+  const totalCount = upcoming.length + past.length;
+%>
+
+<style>
+  /* ─── My Bookings page ─────────────────────────────────────────── */
+  .bookings-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .bookings-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .bookings-back:hover { color: var(--terra); }
+
+  .bookings-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin-bottom: 0.25rem;
+  }
+
+  .bookings-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 2rem;
+  }
+
+  .bookings-section-heading {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin-bottom: 1.25rem;
+  }
+
+  /* ─── Booking card ──────────────────────────────────────────────── */
+  .booking-card {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--white);
+    transition: box-shadow 0.2s;
+    margin-bottom: 1rem;
+  }
+  .booking-card:hover { box-shadow: var(--shadow-md); }
+
+  .booking-card--past {
+    opacity: 0.6;
+  }
+  .booking-card--past:hover { box-shadow: none; }
+
+  .booking-card-img {
+    width: 100%;
+    height: 100%;
+    min-height: 140px;
+    object-fit: cover;
+  }
+
+  .booking-card-body {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .booking-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .booking-card-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .booking-card-title:hover { color: var(--terra); }
+
+  .booking-card-location {
+    font-size: 0.8rem;
+    color: var(--sand);
+  }
+
+  .booking-card-dates {
+    font-size: 0.85rem;
+    color: var(--charcoal);
+    margin-top: 0.25rem;
+  }
+  .booking-card-dates i {
+    color: var(--terra);
+    margin-right: 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .booking-card-pricing {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--charcoal);
+    line-height: 1.6;
+  }
+  .booking-card-pricing-row {
+    display: flex;
+    justify-content: space-between;
+  }
+  .booking-card-pricing-label {
+    color: var(--charcoal-60);
+  }
+  .booking-card-pricing-total {
+    font-weight: 600;
+    border-top: 1px solid var(--charcoal-20);
+    padding-top: 0.25rem;
+    margin-top: 0.15rem;
+  }
+
+  .booking-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  /* ─── Status badge ──────────────────────────────────────────────── */
+  .booking-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .booking-badge--confirmed {
+    background: #e6f4ea;
+    color: #1a7f37;
+  }
+  .booking-badge--pending {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+  .booking-badge--cancelled {
+    background: #fde8e8;
+    color: #c33;
+  }
+
+  /* ─── Cancel button ─────────────────────────────────────────────── */
+  .booking-cancel-btn {
+    background: none;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-sm, 6px);
+    padding: 0.35rem 0.85rem;
+    font-size: 0.78rem;
+    color: var(--charcoal-60);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .booking-cancel-btn:hover {
+    border-color: #c33;
+    color: #c33;
+  }
+
+  /* ─── Responsive ────────────────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .booking-card {
+      grid-template-columns: 1fr;
+    }
+    .booking-card-img {
+      height: 160px;
+      min-height: unset;
+    }
+    .booking-card-top {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<div class="bookings-page">
+
+  <!-- Header -->
+  <a href="/listings" class="bookings-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to listings
+  </a>
+  <h1 class="bookings-title">My Bookings</h1>
+  <p class="bookings-subtitle">
+    <%= totalCount %> booking<%= totalCount !== 1 ? 's' : '' %> total
+  </p>
+
+  <% if (totalCount === 0) { %>
+    <!-- Empty state -->
+    <div class="empty-state">
+      <i class="fa-regular fa-calendar"></i>
+      <h2>No bookings yet</h2>
+      <p>
+        Ready to plan your next trip?
+        <a href="/listings">Browse listings</a>.
+      </p>
+    </div>
+  <% } else { %>
+
+    <% if (upcoming.length > 0) { %>
+      <!-- Upcoming stays -->
+      <h2 class="bookings-section-heading">
+        <i class="fa-regular fa-calendar-check" style="color:var(--terra);margin-right:0.5rem"></i>
+        Upcoming Stays (<%= upcoming.length %>)
+      </h2>
+
+      <% for (const b of upcoming) { %>
+        <div class="booking-card">
+          <img
+            class="booking-card-img"
+            src="<%= b.listing && b.listing.images && b.listing.images.length > 0 ? b.listing.images[0].url : '' %>"
+            alt="<%= b.listing ? b.listing.title : 'Listing' %>"
+          />
+          <div class="booking-card-body">
+            <div class="booking-card-top">
+              <div>
+                <a href="/listings/<%= b.listing._id %>" class="booking-card-title">
+                  <%= b.listing.title %>
+                </a>
+                <div class="booking-card-location">
+                  <i class="fa-solid fa-location-dot" style="margin-right:3px"></i>
+                  <%= b.listing.location %>, <%= b.listing.country %>
+                </div>
+              </div>
+              <% if (b.status === 'pending') { %>
+                <span class="booking-badge booking-badge--pending">
+                  Pending Host Confirmation
+                </span>
+              <% } else { %>
+                <span class="booking-badge booking-badge--<%= b.status %>">
+                  <%= b.status %>
+                </span>
+              <% } %>
+            </div>
+
+            <% if (b.status === 'pending') { %>
+              <div style="font-size:0.8rem;color:var(--sand);margin-top:0.15rem">
+                Waiting for the host to confirm your stay
+              </div>
+            <% } %>
+
+            <div class="booking-card-dates">
+              <i class="fa-regular fa-calendar"></i>
+              <%= fmtDate(b.checkIn) %> &rarr; <%= fmtDate(b.checkOut) %>
+            </div>
+
+            <div class="booking-card-pricing">
+              <% if (b.subtotal != null) { %>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label"><%= (b.nights ?? 1) %> night<%= (b.nights ?? 1) !== 1 ? 's' : '' %> &times; &#8377;<%= (b.pricePerNight ?? 0).toLocaleString("en-IN") %></span>
+                  <span>&#8377;<%= (b.subtotal ?? b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label">GST (18%)</span>
+                  <span>&#8377;<%= (b.gstAmount ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+                <div class="booking-card-pricing-row booking-card-pricing-total">
+                  <span>Total</span>
+                  <span>&#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+              <% } else { %>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label">Total paid</span>
+                  <span>&#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+              <% } %>
+            </div>
+
+            <div class="booking-card-meta">
+              <span style="margin-left:auto">
+                <form id="cancel-form-<%= b._id %>" action="/bookings/<%= b._id %>?_method=DELETE" method="POST" style="display:inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button
+                    type="button"
+                    class="booking-cancel-btn cancel-booking-btn"
+                    data-booking-id="<%= b._id %>"
+                    data-listing="<%= b.listing.title %>"
+                    data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
+                    data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>"
+                  >Cancel</button>
+                </form>
+              </span>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+
+    <% if (past.length > 0) { %>
+      <!-- Past & Cancelled -->
+      <h2 class="bookings-section-heading" style="margin-top:2.5rem">
+        <i class="fa-solid fa-clock-rotate-left" style="color:var(--sand);margin-right:0.5rem"></i>
+        Past &amp; Cancelled (<%= past.length %>)
+      </h2>
+
+      <% for (const b of past) { %>
+        <div class="booking-card booking-card--past">
+          <img
+            class="booking-card-img"
+            src="<%= b.listing && b.listing.images && b.listing.images.length > 0 ? b.listing.images[0].url : '' %>"
+            alt="<%= b.listing ? b.listing.title : 'Listing' %>"
+          />
+          <div class="booking-card-body">
+            <div class="booking-card-top">
+              <div>
+                <a href="/listings/<%= b.listing._id %>" class="booking-card-title">
+                  <%= b.listing.title %>
+                </a>
+                <div class="booking-card-location">
+                  <i class="fa-solid fa-location-dot" style="margin-right:3px"></i>
+                  <%= b.listing.location %>, <%= b.listing.country %>
+                </div>
+              </div>
+              <span class="booking-badge booking-badge--<%= b.status %>">
+                <%= b.status %>
+              </span>
+            </div>
+
+            <div class="booking-card-dates">
+              <i class="fa-regular fa-calendar"></i>
+              <%= fmtDate(b.checkIn) %> &rarr; <%= fmtDate(b.checkOut) %>
+            </div>
+
+            <div class="booking-card-pricing">
+              <% if (b.subtotal != null) { %>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label"><%= (b.nights ?? 1) %> night<%= (b.nights ?? 1) !== 1 ? 's' : '' %> &times; &#8377;<%= (b.pricePerNight ?? 0).toLocaleString("en-IN") %></span>
+                  <span>&#8377;<%= (b.subtotal ?? b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label">GST (18%)</span>
+                  <span>&#8377;<%= (b.gstAmount ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+                <div class="booking-card-pricing-row booking-card-pricing-total">
+                  <span>Total</span>
+                  <span>&#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+              <% } else { %>
+                <div class="booking-card-pricing-row">
+                  <span class="booking-card-pricing-label">Total paid</span>
+                  <span>&#8377;<%= (b.totalPrice ?? 0).toLocaleString("en-IN") %></span>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+
+  <% } %>
+</div>

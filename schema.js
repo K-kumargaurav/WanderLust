@@ -20,3 +20,25 @@ module.exports.reviewSchema = Joi.object({
     }).required(),
     _csrf: Joi.string().optional(),
 });
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+module.exports.bookingSchema = Joi.object({
+    booking: Joi.object({
+        checkIn:  Joi.date().min("now").required(),
+        checkOut: Joi.date().greater(Joi.ref("checkIn")).required(),
+    })
+        .required()
+        .custom((value, helpers) => {
+            const { checkIn, checkOut } = value;
+            if (checkOut - checkIn < ONE_DAY_MS) {
+                return helpers.error("any.invalid");
+            }
+            return value;
+        })
+        .messages({
+            "any.invalid":
+                "Check-out must be at least 1 night after check-in",
+        }),
+    _csrf: Joi.string().optional(),
+});

@@ -1,8 +1,8 @@
 const crypto      = require("crypto");
 const Listing     = require("./models/listing");
 const Review      = require("./models/review");
-const expressErr  = require("./utils/expressErr.js");
-const { listingSchema, reviewSchema } = require("./schema.js");
+const AppError    = require("./utils/expressErr.js");
+const { listingSchema, reviewSchema, bookingSchema } = require("./schema.js");
 const { ALLOWED_IMAGE_MIMES } = require("./utils/constants");
 
 /**
@@ -123,7 +123,7 @@ module.exports.validateListing = (req, res, next) => {
     const { error } = listingSchema.validate(req.body);
     if (error) {
         const errMsg = error.details.map((el) => el.message).join(", ");
-        return next(new expressErr(400, errMsg));
+        return next(new AppError(400, errMsg));
     }
     next();
 };
@@ -143,7 +143,27 @@ module.exports.validateReview = (req, res, next) => {
     const { error } = reviewSchema.validate(req.body);
     if (error) {
         const errMsg = error.details.map((el) => el.message).join(", ");
-        return next(new expressErr(400, errMsg));
+        return next(new AppError(400, errMsg));
+    }
+    next();
+};
+
+/**
+ * Validates the request body against the Joi booking schema.
+ *
+ * Passes a 400 AppError to next() if validation fails, with all
+ * error details joined into a single message string.
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @param   {import('express').NextFunction} next
+ * @returns {void}
+ */
+module.exports.validateBooking = (req, res, next) => {
+    const { error } = bookingSchema.validate(req.body);
+    if (error) {
+        const errMsg = error.details.map((el) => el.message).join(", ");
+        return next(new AppError(400, errMsg));
     }
     next();
 };
@@ -190,7 +210,7 @@ module.exports.validateCsrf = (req, res, next) => {
         req.headers["x-csrf-token"];
 
     if (!token || token !== req.session.csrfToken) {
-        return next(new expressErr(403, "Invalid or missing CSRF token. Please refresh and try again."));
+        return next(new AppError(403, "Invalid or missing CSRF token. Please refresh and try again."));
     }
     next();
 };

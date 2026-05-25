@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const User = require("../models/user");
 const Listing = require("../models/listing");
 const Review = require("../models/review");
+const Booking = require("../models/booking");
 const expressErr = require("../utils/expressErr");
 const { sendPasswordResetEmail } = require("../services/email.service");
 
@@ -165,6 +166,8 @@ module.exports.renderProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
     const myListings = await Listing.find({ owner: req.user._id }).sort({ createdAt: -1 });
 
+    const myBookings = await Booking.find({ guest: req.user._id, status: "confirmed" });
+
     const reviewsWithListings = await Review.aggregate([
         { $match: { author: req.user._id } },
         {
@@ -201,6 +204,7 @@ module.exports.renderProfile = async (req, res) => {
         user,
         myListings,
         reviewsWithListings,
+        bookingCount: myBookings.length,
     });
 };
 

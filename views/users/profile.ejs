@@ -25,11 +25,25 @@
       <div class="profile-stat-label">Reviews</div>
     </div>
     <div class="profile-stat">
+      <div class="profile-stat-value"><%= bookingCount %></div>
+      <div class="profile-stat-label">Bookings</div>
+    </div>
+    <div class="profile-stat">
       <div class="profile-stat-value">
         <%= new Date(user._id.getTimestamp()).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' }) %>
       </div>
       <div class="profile-stat-label">Member Since</div>
     </div>
+  </div>
+
+  <!-- Booking quick links -->
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:2rem">
+    <a href="/bookings" class="btn btn-outline btn-sm">
+      <i class="fa-regular fa-calendar-check"></i> View My Bookings
+    </a>
+    <a href="/host/bookings" class="btn btn-outline btn-sm">
+      <i class="fa-solid fa-house-chimney"></i> Host Dashboard
+    </a>
   </div>
 
   <!-- My Listings -->

@@ -1,6 +1,7 @@
 const listingRouter = require("../route/listing");
 const reviewRouter  = require("../route/review");
 const userRouter    = require("../route/user");
+const bookingRouter = require("../route/booking");
 const AppError      = require("../utils/expressErr");
 
 /**
@@ -23,6 +24,8 @@ function setupRoutes(app) {
     app.use("/listings", listingRouter);
     app.use("/listings/:id/reviews", reviewRouter);
     app.use("/", userRouter);
+    app.use("/listings/:id/bookings", bookingRouter);
+    app.use("/", bookingRouter);
 
     // ─── 404 catch-all ───────────────────────────────────────────────────
     app.all(/(.*)/, (req, res, next) => {
