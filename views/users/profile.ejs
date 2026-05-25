@@ -69,7 +69,7 @@
 
     <% if (reviewsWithListings.length > 0) { %>
       <div class="profile-reviews-list">
-        <% for (const { review, listing } of reviewsWithListings) { %>
+        <% for (const review of reviewsWithListings) { %>
           <div class="profile-review-item">
             <div class="star-display-group" style="margin-bottom:0.3rem">
               <% for (let i = 1; i <= 5; i++) { %>
@@ -77,9 +77,9 @@
               <% } %>
             </div>
             <p style="font-size:0.875rem;color:var(--charcoal);margin-bottom:0.25rem"><%= review.comment %></p>
-            <% if (listing) { %>
-              <a href="/listings/<%= listing._id %>" style="font-size:0.8rem;color:var(--terra)">
-                on "<%= listing.title %>"
+            <% if (review.listing && review.listing._id) { %>
+              <a href="/listings/<%= review.listing._id %>" style="font-size:0.8rem;color:var(--terra)">
+                on "<%= review.listing.title %>"
               </a>
             <% } %>
           </div>

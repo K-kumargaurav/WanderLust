@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const { LISTING_CATEGORIES } = require("./models/listing");
+const { LISTING_CATEGORIES } = require("./utils/constants");
 
 module.exports.listingSchema = Joi.object({
     listing: Joi.object({

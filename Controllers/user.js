@@ -5,6 +5,7 @@ const User = require("../models/user");
 const Listing = require("../models/listing");
 const Review = require("../models/review");
 const expressErr = require("../utils/expressErr");
+const { sendPasswordResetEmail } = require("../services/email.service");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -13,41 +14,17 @@ function isValidEmailFormat(email) {
 }
 
 /**
- * Send a password reset email. Uses nodemailer.
- * Requires SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS env vars.
+ * Renders the signup form.
+ *
+ * Redirects to /listings if the user is already authenticated.
+ *
+ * @route   GET /signup
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {void}
  */
-async function sendResetEmail(email, token, host) {
-    const nodemailer = require("nodemailer");
-
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || "smtp.gmail.com",
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-
-    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
-    const resetUrl = `${protocol}://${host}/reset/${token}`;
-
-    await transporter.sendMail({
-        from: `"WanderLust" <${process.env.SMTP_USER || "noreply@wanderlust.com"}>`,
-        to: email,
-        subject: "WanderLust — Password Reset",
-        html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-                <h2>Password Reset</h2>
-                <p>You requested a password reset for your WanderLust account.</p>
-                <p><a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#C0602A;color:white;text-decoration:none;border-radius:8px">Reset Password</a></p>
-                <p style="color:#888;font-size:0.85rem">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
-            </div>
-        `,
-    });
-}
-
-// ─── SIGNUP FORM ──────────────────────────────────────────────────────────────
 module.exports.renderSignupForm = (req, res) => {
     if (req.isAuthenticated()) {
         return res.redirect("/listings");
@@ -55,7 +32,22 @@ module.exports.renderSignupForm = (req, res) => {
     res.render("users/signup.ejs");
 };
 
-// ─── SIGNUP ───────────────────────────────────────────────────────────────────
+/**
+ * Registers a new user account and logs them in.
+ *
+ * Validates email format and password length, checks for duplicates,
+ * then creates the user via passport-local-mongoose's register().
+ * Auto-logs the user in on success and redirects to the saved URL
+ * or /listings.
+ *
+ * @route   POST /signup
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @param   {import('express').NextFunction} next
+ * @returns {Promise<void>}
+ */
 module.exports.signup = async (req, res, next) => {
     try {
         const { email, password: rawPassword } = req.body;
@@ -103,7 +95,18 @@ module.exports.signup = async (req, res, next) => {
     }
 };
 
-// ─── LOGIN FORM ───────────────────────────────────────────────────────────────
+/**
+ * Renders the login form.
+ *
+ * Redirects to /listings if the user is already authenticated.
+ *
+ * @route   GET /login
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {void}
+ */
 module.exports.renderLoginForm = (req, res) => {
     if (req.isAuthenticated()) {
         return res.redirect("/listings");
@@ -111,10 +114,32 @@ module.exports.renderLoginForm = (req, res) => {
     res.render("users/login.ejs");
 };
 
-// ─── LOGIN (handled by passport in route) ─────────────────────────────────────
+/**
+ * Post-login handler (no-op).
+ *
+ * Authentication is handled by the Passport middleware in the route file.
+ * This export exists so the controller interface stays consistent.
+ *
+ * @route   POST /login
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {void}
+ */
 module.exports.login = (req, res) => {};
 
-// ─── LOGOUT ───────────────────────────────────────────────────────────────────
+/**
+ * Logs the user out and redirects to /listings.
+ *
+ * @route   GET /logout
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @param   {import('express').NextFunction} next
+ * @returns {void}
+ */
 module.exports.logout = (req, res, next) => {
     req.logout((err) => {
         if (err) return next(err);
@@ -123,18 +148,54 @@ module.exports.logout = (req, res, next) => {
     });
 };
 
-// ─── PROFILE ──────────────────────────────────────────────────────────────────
+/**
+ * Renders the user's profile page with their listings and reviews.
+ *
+ * Uses a single aggregation pipeline to fetch reviews with their
+ * associated listings, avoiding the N+1 query problem.
+ *
+ * @route   GET /profile
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.renderProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
     const myListings = await Listing.find({ owner: req.user._id }).sort({ createdAt: -1 });
-    const myReviews  = await Review.find({ author: req.user._id }).sort({ createdAt: -1 });
 
-    // Populate listing info for each review
-    const reviewsWithListings = [];
-    for (const review of myReviews) {
-        const listing = await Listing.findOne({ reviews: review._id });
-        reviewsWithListings.push({ review, listing });
-    }
+    const reviewsWithListings = await Review.aggregate([
+        { $match: { author: req.user._id } },
+        {
+            $lookup: {
+                from: "listings",
+                localField: "_id",
+                foreignField: "reviews",
+                as: "listingData",
+            },
+        },
+        {
+            $unwind: {
+                path: "$listingData",
+                preserveNullAndEmptyArrays: true,
+            },
+        },
+        {
+            $project: {
+                comment: 1,
+                rating: 1,
+                createdAt: 1,
+                listing: {
+                    _id: "$listingData._id",
+                    title: "$listingData.title",
+                    location: "$listingData.location",
+                    images: "$listingData.images",
+                },
+            },
+        },
+        { $sort: { createdAt: -1 } },
+    ]);
 
     res.render("users/profile.ejs", {
         user,
@@ -143,12 +204,34 @@ module.exports.renderProfile = async (req, res) => {
     });
 };
 
-// ─── FORGOT PASSWORD FORM ─────────────────────────────────────────────────────
+/**
+ * Renders the "forgot password" form.
+ *
+ * @route   GET /forgot-password
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {void}
+ */
 module.exports.renderForgotForm = (req, res) => {
     res.render("users/forgot-password.ejs");
 };
 
-// ─── FORGOT PASSWORD ──────────────────────────────────────────────────────────
+/**
+ * Generates a password reset token and emails it to the user.
+ *
+ * Always shows a generic success message regardless of whether the
+ * email exists to prevent email enumeration. Stores a SHA-256 hash
+ * of the token in the database; the raw token goes in the email link.
+ *
+ * @route   POST /forgot-password
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
     if (!email) {
@@ -171,7 +254,7 @@ module.exports.forgotPassword = async (req, res) => {
     await user.save();
 
     try {
-        await sendResetEmail(user.email, token, req.headers.host);
+        await sendPasswordResetEmail(user.email, token, req.headers.host);
         req.flash("success", "If an account with that email exists, a reset link has been sent.");
     } catch (err) {
         console.error("Email send error:", err.message);
@@ -181,7 +264,19 @@ module.exports.forgotPassword = async (req, res) => {
     return res.redirect("/login");
 };
 
-// ─── RESET PASSWORD FORM ──────────────────────────────────────────────────────
+/**
+ * Renders the password reset form if the token is valid and unexpired.
+ *
+ * Hashes the URL token and looks up the matching user. Redirects to
+ * /forgot-password with an error flash if the token is invalid or expired.
+ *
+ * @route   GET /reset/:token
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.renderResetForm = async (req, res) => {
     const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
     const user = await User.findOne({
@@ -197,7 +292,20 @@ module.exports.renderResetForm = async (req, res) => {
     res.render("users/reset-password.ejs", { token: req.params.token });
 };
 
-// ─── RESET PASSWORD ───────────────────────────────────────────────────────────
+/**
+ * Resets the user's password using a valid reset token.
+ *
+ * Validates the token, enforces minimum password length, sets the new
+ * password via passport-local-mongoose, clears the reset fields, and
+ * auto-logs the user in.
+ *
+ * @route   POST /reset/:token
+ * @access  Public
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.resetPassword = async (req, res) => {
     const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
     const user = await User.findOne({
@@ -231,7 +339,19 @@ module.exports.resetPassword = async (req, res) => {
     });
 };
 
-// ─── WISHLIST ─────────────────────────────────────────────────────────────────
+/**
+ * Toggles a listing in the user's wishlist (add if absent, remove if present).
+ *
+ * Returns JSON for AJAX requests or redirects back for standard form
+ * submissions.
+ *
+ * @route   POST /wishlist/:id
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.toggleWishlist = async (req, res) => {
     const { id } = req.params;
     const user = await User.findById(req.user._id);
@@ -252,6 +372,16 @@ module.exports.toggleWishlist = async (req, res) => {
     res.redirect("back");
 };
 
+/**
+ * Renders the user's wishlist page with populated listing data.
+ *
+ * @route   GET /wishlist
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
 module.exports.renderWishlist = async (req, res) => {
     const user = await User.findById(req.user._id).populate("wishlist");
     res.render("users/wishlist.ejs", { wishlistListings: user.wishlist });

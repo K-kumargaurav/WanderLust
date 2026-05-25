@@ -1,0 +1,152 @@
+const express        = require("express");
+const path           = require("path");
+const session        = require("express-session");
+const _mongoStore    = require("connect-mongo");
+const MongoStore     = _mongoStore.default || _mongoStore;
+const flash          = require("connect-flash");
+const passport       = require("passport");
+const LocalStrategy  = require("passport-local");
+const helmet         = require("helmet");
+const compression    = require("compression");
+const morgan         = require("morgan");
+const methodOverride = require("method-override");
+const ejsMate        = require("ejs-mate");
+
+const config         = require("../config");
+const User           = require("../models/user");
+const { setCsrfToken } = require("../middleware");
+
+/**
+ * Applies all Express middleware to the app instance.
+ *
+ * @param {import('express').Express} app
+ */
+function setupMiddleware(app) {
+    // ─── Trust proxy (Render reverse proxy) ──────────────────────────────
+    app.set("trust proxy", 1);
+
+    // ─── View engine ─────────────────────────────────────────────────────
+    app.set("view engine", "ejs");
+    app.set("views", path.join(__dirname, "..", "views"));
+    app.engine("ejs", ejsMate);
+
+    // ─── Compression & logging ───────────────────────────────────────────
+    app.use(compression());
+    app.use(morgan(config.server.isProduction ? "combined" : "dev"));
+
+    // ─── Body parsing ────────────────────────────────────────────────────
+    app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+    app.use(express.json({ limit: "1mb" }));
+    app.use(methodOverride("_method"));
+    app.use(express.static(path.join(__dirname, "..", "public"), {
+        maxAge: config.server.isProduction ? "7d" : 0,
+    }));
+
+    // ─── Security headers ────────────────────────────────────────────────
+    app.use(
+        helmet({
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: [
+                        "'self'",
+                        "https://api.mapbox.com",
+                        "https://cdnjs.cloudflare.com",
+                        "'unsafe-inline'",
+                    ],
+                    workerSrc: ["'self'", "blob:"],
+                    childSrc: ["blob:"],
+                    imgSrc: [
+                        "'self'",
+                        "data:",
+                        "blob:",
+                        "https://res.cloudinary.com",
+                        "https://images.unsplash.com",
+                        "https://plus.unsplash.com",
+                        "https://api.mapbox.com",
+                    ],
+                    connectSrc: [
+                        "'self'",
+                        "https://api.mapbox.com",
+                        "https://events.mapbox.com",
+                    ],
+                    styleSrc: [
+                        "'self'",
+                        "https://api.mapbox.com",
+                        "https://cdnjs.cloudflare.com",
+                        "https://fonts.googleapis.com",
+                        "'unsafe-inline'",
+                    ],
+                    fontSrc: [
+                        "'self'",
+                        "https://fonts.gstatic.com",
+                        "https://cdnjs.cloudflare.com",
+                    ],
+                },
+            },
+        })
+    );
+
+    // ─── Session store ───────────────────────────────────────────────────
+    const store = MongoStore.create({
+        mongoUrl: config.db.url,
+        crypto:   { secret: config.session.secret },
+        touchAfter: config.session.touchAfterSeconds,
+    });
+
+    store.on("error", (err) => {
+        console.error("SESSION STORE ERROR:", err);
+    });
+
+    app.use(session({
+        store,
+        secret:            config.session.secret,
+        resave:            false,
+        saveUninitialized: false,
+        cookie: {
+            maxAge:   config.session.maxAgeMs,
+            httpOnly: true,
+            secure:   config.server.isProduction,
+            sameSite: "lax",
+        },
+    }));
+
+    app.use(flash());
+
+    // ─── Passport ────────────────────────────────────────────────────────
+    app.use(passport.initialize());
+    app.use(passport.session());
+
+    // passport-local-mongoose v9 returns an async verify function, but
+    // passport-local expects a callback-based one.  Bridge the two.
+    const asyncVerify = User.authenticate();
+    passport.use(new LocalStrategy(
+        (username, password, done) => {
+            asyncVerify(username, password)
+                .then((result) => {
+                    if (!result.user) {
+                        return done(null, false, result.error);
+                    }
+                    done(null, result.user);
+                })
+                .catch(done);
+        }
+    ));
+
+    passport.serializeUser(User.serializeUser());
+    passport.deserializeUser(User.deserializeUser());
+
+    // ─── CSRF token ──────────────────────────────────────────────────────
+    app.use(setCsrfToken);
+
+    // ─── Locals ──────────────────────────────────────────────────────────
+    app.use((req, res, next) => {
+        res.locals.success  = req.flash("success");
+        res.locals.error    = req.flash("error");
+        res.locals.mapToken = config.mapbox.token;
+        res.locals.currUser = req.user;
+        next();
+    });
+}
+
+module.exports = { setupMiddleware };

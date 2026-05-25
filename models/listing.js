@@ -1,20 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const Review = require("./review");
-
-const LISTING_CATEGORIES = [
-    "Rooms",
-    "Iconic Cities",
-    "Mountains",
-    "Castles",
-    "Amazing Pools",
-    "Camping",
-    "Farms",
-    "Arctic",
-    "Domes",
-    "Boats",
-    "Beach",
-];
+const { LISTING_CATEGORIES } = require("../utils/constants");
 
 const listingSchema = new Schema({
     title: {
