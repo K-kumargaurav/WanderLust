@@ -238,7 +238,7 @@
             <th>Nights</th>
             <th>Total</th>
             <th>Status</th>
-            <th>Actions</th>
+            <th>Payment</th>
             <th>Booked On</th>
           </tr>
         </thead>
@@ -265,27 +265,12 @@
                 <span class="host-badge host-badge--<%= b.status %>"><%= b.status %></span>
               </td>
               <td>
-                <% if (b.status === 'pending') { %>
-                  <form action="/bookings/<%= b._id %>/confirm?_method=PUT" method="POST" style="display:inline">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <button type="button" class="btn btn-primary btn-sm confirm-host-btn"
-                            data-booking-id="<%= b._id %>"
-                            data-guest="<%= b.guest.username %>"
-                            data-listing="<%= b.listing.title %>"
-                            data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
-                            data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>">
-                      <i class="fa-solid fa-check"></i> Accept
-                    </button>
-                  </form>
-                  <form action="/bookings/<%= b._id %>/reject?_method=PUT" method="POST" style="display:inline" id="reject-form-<%= b._id %>">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                    <button type="button" class="btn btn-danger btn-sm reject-host-btn"
-                            data-booking-id="<%= b._id %>"
-                            data-guest="<%= b.guest.username %>"
-                            data-listing="<%= b.listing.title %>">
-                      <i class="fa-solid fa-xmark"></i> Reject
-                    </button>
-                  </form>
+                <% if (b.paymentStatus === 'paid') { %>
+                  <span style="background:#e6f4ea;color:#1a7f37;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x1F4B3; Paid</span>
+                <% } else if (b.paymentStatus === 'unpaid') { %>
+                  <span style="background:#fff4e5;color:#b35c00;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x23F3; Awaiting Payment</span>
+                <% } else if (b.paymentStatus === 'refunded') { %>
+                  <span style="background:#fde8e8;color:#c33;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x21A9;&#xFE0F; Refunded</span>
                 <% } %>
               </td>
               <td class="host-table-booked"><%= fmtShort(b.createdAt) %></td>
@@ -312,6 +297,18 @@
             <span class="host-badge host-badge--<%= b.status %>"><%= b.status %></span>
           </div>
 
+          <div class="host-card-row">
+            <span class="host-card-label">Payment</span>
+            <span>
+              <% if (b.paymentStatus === 'paid') { %>
+                <span style="background:#e6f4ea;color:#1a7f37;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x1F4B3; Paid</span>
+              <% } else if (b.paymentStatus === 'unpaid') { %>
+                <span style="background:#fff4e5;color:#b35c00;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x23F3; Awaiting Payment</span>
+              <% } else if (b.paymentStatus === 'refunded') { %>
+                <span style="background:#fde8e8;color:#c33;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x21A9;&#xFE0F; Refunded</span>
+              <% } %>
+            </span>
+          </div>
           <div class="host-card-row">
             <span class="host-card-label">Guest</span>
             <span><%= b.guest.username %></span>
@@ -343,31 +340,6 @@
             <span class="host-card-label">Booked on</span>
             <span style="font-size:0.78rem;color:var(--charcoal-60)"><%= fmtShort(b.createdAt) %></span>
           </div>
-          <% if (b.status === 'pending') { %>
-            <hr class="host-card-divider" />
-            <div style="display:flex;gap:0.5rem;justify-content:flex-end">
-              <form action="/bookings/<%= b._id %>/confirm?_method=PUT" method="POST" style="display:inline">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                <button type="button" class="btn btn-primary btn-sm confirm-host-btn"
-                        data-booking-id="<%= b._id %>"
-                        data-guest="<%= b.guest.username %>"
-                        data-listing="<%= b.listing.title %>"
-                        data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
-                        data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>">
-                  <i class="fa-solid fa-check"></i> Accept
-                </button>
-              </form>
-              <form action="/bookings/<%= b._id %>/reject?_method=PUT" method="POST" style="display:inline" id="reject-form-mobile-<%= b._id %>">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                <button type="button" class="btn btn-danger btn-sm reject-host-btn"
-                        data-booking-id="<%= b._id %>"
-                        data-guest="<%= b.guest.username %>"
-                        data-listing="<%= b.listing.title %>">
-                  <i class="fa-solid fa-xmark"></i> Reject
-                </button>
-              </form>
-            </div>
-          <% } %>
         </div>
       <% } %>
     </div>

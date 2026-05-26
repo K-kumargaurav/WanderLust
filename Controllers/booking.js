@@ -1,16 +1,17 @@
-const config = require("../config/index.js");
-const AppError = require("../utils/expressErr.js");
-const wrapAsync = require("../utils/wrapAsync.js");
 const Listing = require("../models/listing.js");
 const Booking = require("../models/booking.js");
 const { BOOKING_STATUS, GST_RATE } = require("../utils/constants.js");
-const { sendBookingConfirmationEmail } = require("../services/email.service.js");
+const {
+    createCheckoutSession,
+    retrieveSession,
+} = require("../services/payment.service.js");
 
 const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 
 /**
  * Creates a new booking for a listing after checking for
  * ownership, date conflicts, and overlap.
+ * Booking is auto-confirmed after successful Stripe payment.
  *
  * @route   POST /listings/:id/bookings
  * @access  Authenticated (non-owner)
@@ -56,129 +57,28 @@ module.exports.createBooking = async (req, res) => {
         subtotal,
         gstAmount,
         totalPrice,
-        status: BOOKING_STATUS.PENDING,
+        status: BOOKING_STATUS.CONFIRMED,
+        paymentStatus: "unpaid",
     });
     await booking.save();
 
-    req.flash("success", "Booking request sent! The host will confirm shortly.");
-    return req.session.save(() => res.redirect("/bookings"));
-};
-
-/**
- * Cancels an existing confirmed booking.
- *
- * @route   POST /bookings/:bookingId/cancel
- * @access  Guest who made the booking
- *
- * @param   {import('express').Request}  req
- * @param   {import('express').Response} res
- * @returns {Promise<void>}
- */
-module.exports.cancelBooking = async (req, res) => {
-    const { bookingId } = req.params;
-    const booking = await Booking.findById(bookingId).populate("listing");
-
-    if (!booking) {
-        req.flash("error", "Booking not found.");
-        return req.session.save(() => res.redirect("/bookings"));
-    }
-
-    if (!booking.guest.equals(req.user._id)) {
-        req.flash("error", "You can only cancel your own bookings.");
-        return req.session.save(() => res.redirect("/bookings"));
-    }
-
-    if (booking.status === BOOKING_STATUS.CANCELLED) {
-        req.flash("error", "This booking is already cancelled.");
-        return req.session.save(() => res.redirect("/bookings"));
-    }
-
-    booking.status = BOOKING_STATUS.CANCELLED;
-    await booking.save();
-
-    req.flash("success", "Booking cancelled successfully.");
-    return req.session.save(() => res.redirect("/bookings"));
-};
-
-/**
- * Allows a listing owner to confirm a pending booking.
- *
- * @route   PUT /bookings/:bookingId/confirm
- * @access  Listing owner only
- *
- * @param   {import('express').Request}  req
- * @param   {import('express').Response} res
- * @returns {Promise<void>}
- */
-module.exports.confirmBooking = async (req, res) => {
-    const booking = await Booking.findById(req.params.bookingId)
-        .populate("listing")
-        .populate("guest");
-
-    if (!booking) {
-        req.flash("error", "Booking not found.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    if (!booking.listing.owner.equals(req.user._id)) {
-        req.flash("error", "You are not authorized to confirm this booking.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    if (booking.status !== BOOKING_STATUS.PENDING) {
-        req.flash("error", "This booking cannot be confirmed.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    booking.status = BOOKING_STATUS.CONFIRMED;
-    await booking.save();
-
+    // Create Stripe Checkout Session and redirect guest to payment page
+    let checkoutResult;
     try {
-        await sendBookingConfirmationEmail(
-            booking.guest.email, booking, req.headers.host
+        checkoutResult = await createCheckoutSession(
+            booking, listing, req.user, req.headers.host
         );
-    } catch (err) {
-        console.error("[booking] confirm email failed:", err.message);
+    } catch (stripeErr) {
+        console.error("[payment] checkout session failed:", stripeErr.message);
+        await Booking.findByIdAndDelete(booking._id);
+        req.flash("error", "Payment setup failed. Please try again.");
+        return req.session.save(() => res.redirect(`/listings/${id}`));
     }
 
-    req.flash("success", "Booking confirmed! The guest has been notified.");
-    return req.session.save(() => res.redirect("/host/bookings"));
-};
-
-/**
- * Allows a listing owner to reject a pending booking.
- *
- * @route   PUT /bookings/:bookingId/reject
- * @access  Listing owner only
- *
- * @param   {import('express').Request}  req
- * @param   {import('express').Response} res
- * @returns {Promise<void>}
- */
-module.exports.rejectBooking = async (req, res) => {
-    const booking = await Booking.findById(req.params.bookingId)
-        .populate("listing");
-
-    if (!booking) {
-        req.flash("error", "Booking not found.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    if (!booking.listing.owner.equals(req.user._id)) {
-        req.flash("error", "You are not authorized to reject this booking.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    if (booking.status !== BOOKING_STATUS.PENDING) {
-        req.flash("error", "This booking cannot be rejected.");
-        return req.session.save(() => res.redirect("/host/bookings"));
-    }
-
-    booking.status = BOOKING_STATUS.CANCELLED;
+    booking.stripeSessionId = checkoutResult.id;
     await booking.save();
 
-    req.flash("success", "Booking rejected and dates released.");
-    return req.session.save(() => res.redirect("/host/bookings"));
+    return res.redirect(checkoutResult.url);
 };
 
 /**
@@ -237,4 +137,103 @@ module.exports.renderHostBookings = async (req, res) => {
         .sort({ checkIn: 1 });
 
     res.render("bookings/host.ejs", { bookings });
+};
+
+/**
+ * Handles Stripe redirect after successful payment.
+ * Verifies the session, confirms booking and marks as paid.
+ *
+ * @route   GET /bookings/payment/success
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+module.exports.paymentSuccess = async (req, res) => {
+    const { session_id } = req.query;
+
+    if (!session_id) {
+        req.flash("error", "Invalid payment session.");
+        return req.session.save(() => res.redirect("/bookings"));
+    }
+
+    // Retrieve and verify the session from Stripe
+    const session = await retrieveSession(session_id);
+
+    if (session.payment_status !== "paid") {
+        req.flash("error", "Payment was not completed. Please try again.");
+        return req.session.save(() => res.redirect("/bookings"));
+    }
+
+    // Find the booking by session ID
+    const booking = await Booking.findOne({
+        stripeSessionId: session.id,
+    });
+
+    if (!booking) {
+        req.flash("error", "Booking not found.");
+        return req.session.save(() => res.redirect("/bookings"));
+    }
+
+    // Update payment and status fields
+    booking.stripePaymentIntentId =
+        session.payment_intent?.id || session.payment_intent;
+    booking.paymentStatus = "paid";
+    booking.status = BOOKING_STATUS.CONFIRMED;
+    await booking.save();
+
+    req.flash("success", "Booking confirmed! Enjoy your stay.");
+    return req.session.save(() => res.redirect("/bookings"));
+};
+
+/**
+ * Handles Stripe redirect when guest cancels payment.
+ * Deletes the unpaid booking.
+ *
+ * @route   GET /bookings/payment/cancel
+ * @access  Authenticated
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+module.exports.paymentCancel = async (req, res) => {
+    // Find and delete the most recent unpaid booking for this guest
+    await Booking.findOneAndDelete({
+        guest: req.user._id,
+        paymentStatus: "unpaid",
+    });
+
+    req.flash("error", "Payment cancelled. Your booking was not confirmed.");
+    return req.session.save(() => res.redirect("/listings"));
+};
+
+/**
+ * Returns all booked/confirmed date ranges for a listing.
+ * Used by flatpickr to disable unavailable dates on the frontend.
+ *
+ * @route   GET /listings/:id/booked-dates
+ * @access  Public (no auth needed — just viewing availability)
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+module.exports.getBookedDates = async (req, res) => {
+    const { id } = req.params;
+
+    const bookings = await Booking.find({
+        listing: id,
+        status: BOOKING_STATUS.CONFIRMED,
+        paymentStatus: "paid",
+        checkOut: { $gte: new Date() },
+    }).select("checkIn checkOut");
+
+    const bookedRanges = bookings.map((b) => ({
+        from: b.checkIn.toISOString().split("T")[0],
+        to: b.checkOut.toISOString().split("T")[0],
+    }));
+
+    return res.json({ bookedRanges });
 };

@@ -262,7 +262,7 @@
         <%= listing.location %>, <%= listing.country %>
       </div>
       <% if(currUser) { %>
-        <form id="bookingForm" action="/listings/<%= listing._id %>/bookings" method="POST">
+        <form id="bookingForm" action="/listings/<%= listing._id %>/bookings" method="POST" data-title="<%= listing.title %>">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
           <div class="booking-date-grid">
@@ -275,7 +275,6 @@
                 placeholder="Select dates"
                 class="form-control"
                 required
-                readonly
               />
             </div>
             <div class="booking-date-field">
@@ -292,14 +291,29 @@
             </div>
           </div>
 
+          <div style="display:flex;gap:1rem;margin-top:0.5rem;margin-bottom:0.75rem;font-size:0.75rem;color:var(--charcoal-60)">
+            <span style="display:flex;align-items:center;gap:0.3rem">
+              <span style="width:14px;height:14px;border-radius:2px;background:repeating-linear-gradient(45deg,rgba(192,96,42,0.15),rgba(192,96,42,0.15) 2px,transparent 2px,transparent 8px);border:1px solid var(--charcoal-20)"></span>
+              Booked
+            </span>
+            <span style="display:flex;align-items:center;gap:0.3rem">
+              <span style="width:14px;height:14px;border-radius:2px;background:var(--terra)"></span>
+              Your selection
+            </span>
+            <span style="display:flex;align-items:center;gap:0.3rem">
+              <span style="width:14px;height:14px;border-radius:2px;background:var(--ivory-dark);border:1px solid var(--charcoal-20)"></span>
+              Available
+            </span>
+          </div>
+
           <div id="booking-summary" class="booking-summary" style="display:none">
             <div class="booking-summary-row">
               <span id="summary-subtotal-label"></span>
-              <span id="summary-subtotal-value"></span>
+              <span id="summary-subtotal"></span>
             </div>
             <div class="booking-summary-row" style="color:var(--charcoal-60)">
               <span>GST (18%)</span>
-              <span id="summary-gst-value"></span>
+              <span id="summary-gst"></span>
             </div>
             <hr style="border:none;border-top:1px solid var(--charcoal-20);margin:0.4rem 0" />
             <div class="booking-summary-row" style="font-weight:600">
@@ -308,12 +322,12 @@
             </div>
           </div>
 
-          <button type="submit" class="btn-reserve" id="booking-submit" disabled>
+          <button type="submit" class="btn-reserve" id="booking-submit-btn" disabled>
             Confirm Booking
           </button>
         </form>
         <p style="font-size:0.72rem;color:var(--sand);text-align:center;margin-top:0.75rem">
-          You won't be charged yet
+          You will be redirected to Stripe for secure payment
         </p>
       <% } else { %>
         <a href="/login" class="btn-reserve" style="display:block;text-align:center;text-decoration:none">
@@ -416,94 +430,135 @@
   }
 </style>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const checkInInput    = document.getElementById("checkIn");
-    if (!checkInInput || typeof flatpickr === "undefined") return;
+document.addEventListener('DOMContentLoaded', function () {
+  (function () {
+    var bookingForm = document.getElementById('bookingForm');
+    if (!bookingForm) return;
 
-    const checkOutInput       = document.getElementById("checkOut");
-    const checkOutDisplay     = document.getElementById("checkOutDisplay");
-    const summary             = document.getElementById("booking-summary");
-    const summarySubLabel     = document.getElementById("summary-subtotal-label");
-    const summarySubValue     = document.getElementById("summary-subtotal-value");
-    const summaryGstValue     = document.getElementById("summary-gst-value");
-    const summaryTotal        = document.getElementById("summary-total");
-    const submitBtn           = document.getElementById("booking-submit");
-    const pricePerNight       = Number(document.querySelector(".price-card").dataset.price);
-    const GST_RATE            = 0.18;
+    var listingId = '<%= listing._id %>';
+    var calculatedNights = 0;
+    var calculatedTotal  = 0;
+
+    var pricePerNight = parseInt(
+      document.querySelector('.price-card').dataset.price || 0
+    );
+
+    // Fetch booked dates from server then init flatpickr
+    fetch('/listings/' + listingId + '/booked-dates')
+      .then(function (res) { return res.json(); })
+      .then(function (data) { initCalendar(data.bookedRanges || []); })
+      .catch(function () { initCalendar([]); });
 
     function formatDate(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+      var year  = date.getFullYear();
+      var month = String(date.getMonth() + 1).padStart(2, '0');
+      var day   = String(date.getDate()).padStart(2, '0');
+      return year + '-' + month + '-' + day;
     }
 
-    const bookingForm = document.getElementById("bookingForm");
-    const listingTitle = bookingForm.closest(".price-card")
-      .querySelector(".price-card-amount").textContent.trim();
+    function initCalendar(bookedRanges) {
+      var disabledDates = bookedRanges.map(function (range) {
+        return { from: range.from, to: range.to };
+      });
 
-    bookingForm.addEventListener("submit", async (e) => {
+      flatpickr('#checkIn', {
+        mode:       'range',
+        minDate:    'today',
+        dateFormat: 'Y-m-d',
+        showMonths: 1,
+        disable:    disabledDates,
+
+        onDayCreate: function (dObj, dStr, fp, dayElem) {
+          var dateStr = dayElem.dateObj
+            ? formatDate(dayElem.dateObj)
+            : null;
+          if (!dateStr) return;
+
+          var isBooked = bookedRanges.some(function (range) {
+            return dateStr >= range.from && dateStr <= range.to;
+          });
+
+          if (isBooked) {
+            dayElem.classList.add('booked-date');
+            dayElem.title = 'Already booked';
+          }
+        },
+
+        onChange: function (selectedDates) {
+          if (selectedDates.length === 2) {
+            var start = selectedDates[0];
+            var end   = selectedDates[1];
+
+            document.getElementById('checkIn').value = formatDate(start);
+            document.getElementById('checkOut').value = formatDate(end);
+            document.getElementById('checkOutDisplay').value = formatDate(end);
+
+            calculatedNights = Math.ceil(
+              (end - start) / (1000 * 60 * 60 * 24)
+            );
+            var subtotal  = calculatedNights * pricePerNight;
+            var gst       = Math.round(subtotal * 0.18);
+            calculatedTotal = subtotal + gst;
+
+            document.getElementById('booking-summary').style.display = 'block';
+            document.getElementById('summary-subtotal-label').textContent =
+              '\u20b9' + pricePerNight.toLocaleString('en-IN') +
+              ' \u00d7 ' + calculatedNights + ' night' +
+              (calculatedNights === 1 ? '' : 's');
+            document.getElementById('summary-subtotal').textContent =
+              '\u20b9' + subtotal.toLocaleString('en-IN');
+            document.getElementById('summary-gst').textContent =
+              '\u20b9' + gst.toLocaleString('en-IN');
+            document.getElementById('summary-total').textContent =
+              '\u20b9' + calculatedTotal.toLocaleString('en-IN');
+
+            document.getElementById('booking-submit-btn').disabled = false;
+          } else {
+            document.getElementById('booking-summary').style.display = 'none';
+            document.getElementById('booking-submit-btn').disabled   = true;
+            document.getElementById('checkOut').value = '';
+            document.getElementById('checkOutDisplay').value = '';
+          }
+        },
+      });
+    }
+
+    // Form submit -> modal -> Stripe redirect
+    bookingForm.addEventListener('submit', async function (e) {
       e.preventDefault();
-      const checkIn  = checkInInput.value;
-      const checkOut = checkOutInput.value;
-      const nights   = Number(bookingForm.dataset.nights);
-      const total    = Number(bookingForm.dataset.total);
+      e.stopPropagation();
 
-      const confirmed = await showConfirmModal(
-        "Confirm your booking",
-        `<strong><%= listing.title.replace(/'/g, "\\'") %></strong><br><br>` +
-        `Check-in: <strong>${checkIn}</strong><br>` +
-        `Check-out: <strong>${checkOut}</strong><br>` +
-        `Duration: <strong>${nights} night${nights > 1 ? "s" : ""}</strong><br><br>` +
-        `Total (incl. GST): <strong>\u20b9${total.toLocaleString("en-IN")}</strong>`,
-        "Confirm Booking",
-        "btn-primary"
+      var checkIn  = document.getElementById('checkIn').value;
+      var checkOut = document.getElementById('checkOut').value;
+      var title    = bookingForm.dataset.title;
+
+      if (!checkIn || !checkOut) {
+        alert('Please select check-in and check-out dates.');
+        return;
+      }
+
+      var confirmed = await showConfirmModal(
+        'Confirm your booking',
+        '<strong>' + title + '</strong><br><br>' +
+        'Check-in:  <strong>' + checkIn + '</strong><br>' +
+        'Check-out: <strong>' + checkOut + '</strong><br>' +
+        'Duration:  <strong>' + calculatedNights + ' night' +
+          (calculatedNights !== 1 ? 's' : '') + '</strong><br><br>' +
+        'Total (incl. GST): <strong>\u20b9' +
+          calculatedTotal.toLocaleString('en-IN') + '</strong><br><br>' +
+        '<span style="color:var(--charcoal-60);font-size:0.85rem">' +
+          '\uD83D\uDCB3 You will be redirected to Stripe to complete payment.' +
+        '</span>',
+        'Confirm & Pay',
+        'btn-primary'
       );
 
-      if (confirmed) e.target.submit();
+      if (confirmed) {
+        bookingForm.submit();
+      }
     });
-
-    flatpickr(checkInInput, {
-      mode: "range",
-      minDate: "today",
-      dateFormat: "Y-m-d",
-      showMonths: 1,
-      onChange(selectedDates) {
-        if (selectedDates.length === 2) {
-          const ciStr = formatDate(selectedDates[0]);
-          const coStr = formatDate(selectedDates[1]);
-
-          checkInInput.value  = ciStr;
-          checkOutInput.value = coStr;
-          checkOutDisplay.value = coStr;
-
-          const nights   = Math.ceil(
-            (selectedDates[1] - selectedDates[0]) / (1000 * 60 * 60 * 24)
-          );
-          const subtotal = nights * pricePerNight;
-          const gst      = Math.round(subtotal * GST_RATE);
-          const total    = subtotal + gst;
-
-          summarySubLabel.textContent = `\u20b9${pricePerNight.toLocaleString("en-IN")} \u00d7 ${nights} night${nights === 1 ? "" : "s"}`;
-          summarySubValue.textContent = `\u20b9${subtotal.toLocaleString("en-IN")}`;
-          summaryGstValue.textContent = `\u20b9${gst.toLocaleString("en-IN")}`;
-          summaryTotal.textContent    = `\u20b9${total.toLocaleString("en-IN")}`;
-          summary.style.display       = "block";
-          submitBtn.disabled          = false;
-
-          // Store for confirmation modal
-          const form = document.getElementById("bookingForm");
-          form.dataset.nights = nights;
-          form.dataset.total  = total;
-        } else {
-          checkOutInput.value     = "";
-          checkOutDisplay.value   = "";
-          summary.style.display   = "none";
-          submitBtn.disabled      = true;
-        }
-      },
-    });
-  });
+  })();
+});
 </script>
 <% } %>
 

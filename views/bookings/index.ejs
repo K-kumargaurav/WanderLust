@@ -246,22 +246,14 @@
                   <%= b.listing.location %>, <%= b.listing.country %>
                 </div>
               </div>
-              <% if (b.status === 'pending') { %>
-                <span class="booking-badge booking-badge--pending">
-                  Pending Host Confirmation
-                </span>
-              <% } else { %>
-                <span class="booking-badge booking-badge--<%= b.status %>">
-                  <%= b.status %>
-                </span>
+              <% if (b.status === 'confirmed' && b.paymentStatus === 'paid') { %>
+                <span style="background:#EFF8F1;color:#1D6F3A;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x2705; Confirmed</span>
+              <% } else if (b.status === 'cancelled' || b.paymentStatus === 'refunded') { %>
+                <span style="background:#FDF0EF;color:#9B2D2D;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x274C; Cancelled</span>
+              <% } else if (b.paymentStatus === 'unpaid') { %>
+                <span style="background:#FEF3C7;color:#92400E;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x23F3; Awaiting Payment</span>
               <% } %>
             </div>
-
-            <% if (b.status === 'pending') { %>
-              <div style="font-size:0.8rem;color:var(--sand);margin-top:0.15rem">
-                Waiting for the host to confirm your stay
-              </div>
-            <% } %>
 
             <div class="booking-card-dates">
               <i class="fa-regular fa-calendar"></i>
@@ -290,21 +282,6 @@
               <% } %>
             </div>
 
-            <div class="booking-card-meta">
-              <span style="margin-left:auto">
-                <form id="cancel-form-<%= b._id %>" action="/bookings/<%= b._id %>?_method=DELETE" method="POST" style="display:inline">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-                  <button
-                    type="button"
-                    class="booking-cancel-btn cancel-booking-btn"
-                    data-booking-id="<%= b._id %>"
-                    data-listing="<%= b.listing.title %>"
-                    data-checkin="<%= b.checkIn.toLocaleDateString('en-IN') %>"
-                    data-checkout="<%= b.checkOut.toLocaleDateString('en-IN') %>"
-                  >Cancel</button>
-                </form>
-              </span>
-            </div>
           </div>
         </div>
       <% } %>
@@ -335,9 +312,13 @@
                   <%= b.listing.location %>, <%= b.listing.country %>
                 </div>
               </div>
-              <span class="booking-badge booking-badge--<%= b.status %>">
-                <%= b.status %>
-              </span>
+              <% if (b.status === 'confirmed' && b.paymentStatus === 'paid') { %>
+                <span style="background:#EFF8F1;color:#1D6F3A;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x2705; Confirmed</span>
+              <% } else if (b.status === 'cancelled' || b.paymentStatus === 'refunded') { %>
+                <span style="background:#FDF0EF;color:#9B2D2D;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x274C; Cancelled</span>
+              <% } else if (b.paymentStatus === 'unpaid') { %>
+                <span style="background:#FEF3C7;color:#92400E;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.75rem;font-weight:600">&#x23F3; Awaiting Payment</span>
+              <% } %>
             </div>
 
             <div class="booking-card-dates">

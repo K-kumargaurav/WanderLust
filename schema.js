@@ -25,7 +25,23 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 module.exports.bookingSchema = Joi.object({
     booking: Joi.object({
-        checkIn:  Joi.date().min("now").required(),
+        checkIn: Joi.date()
+            .custom((value, helpers) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const submitted = new Date(value);
+                submitted.setHours(0, 0, 0, 0);
+
+                if (submitted < today) {
+                    return helpers.error("date.min");
+                }
+                return value;
+            })
+            .required()
+            .messages({
+                "date.min": "Check-in date cannot be in the past.",
+            }),
         checkOut: Joi.date().greater(Joi.ref("checkIn")).required(),
     })
         .required()

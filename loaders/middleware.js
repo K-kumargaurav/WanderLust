@@ -12,9 +12,11 @@ const morgan         = require("morgan");
 const methodOverride = require("method-override");
 const ejsMate        = require("ejs-mate");
 
-const config         = require("../config");
-const User           = require("../models/user");
-const { setCsrfToken } = require("../middleware");
+const config             = require("../config");
+const User               = require("../models/user");
+const { setCsrfToken }   = require("../middleware");
+const webhookController  = require("../Controllers/webhook");
+const wrapAsync          = require("../utils/wrapAsync");
 
 /**
  * Applies all Express middleware to the app instance.
@@ -34,6 +36,15 @@ function setupMiddleware(app) {
     app.use(compression());
     app.use(morgan(config.server.isProduction ? "combined" : "dev"));
 
+    // ─── Stripe Webhook (must be BEFORE body parsers) ──────────────────────
+    // Stripe requires the raw Buffer body for signature verification.
+    // Registering here ensures express.json() never touches this route.
+    app.post(
+        "/webhook/stripe",
+        express.raw({ type: "application/json" }),
+        wrapAsync(webhookController.handleStripeWebhook)
+    );
+
     // ─── Body parsing ────────────────────────────────────────────────────
     app.use(express.urlencoded({ extended: true, limit: "1mb" }));
     app.use(express.json({ limit: "1mb" }));
@@ -52,9 +63,15 @@ function setupMiddleware(app) {
                         "'self'",
                         "https://api.mapbox.com",
                         "https://cdnjs.cloudflare.com",
+                        "https://js.stripe.com",
                         "'unsafe-inline'",
                     ],
                     workerSrc: ["'self'", "blob:"],
+                    frameSrc: [
+                        "'self'",
+                        "https://js.stripe.com",
+                        "https://hooks.stripe.com",
+                    ],
                     childSrc: ["blob:"],
                     imgSrc: [
                         "'self'",
@@ -64,11 +81,15 @@ function setupMiddleware(app) {
                         "https://images.unsplash.com",
                         "https://plus.unsplash.com",
                         "https://api.mapbox.com",
+                        "https://*.stripe.com",
                     ],
                     connectSrc: [
                         "'self'",
                         "https://api.mapbox.com",
                         "https://events.mapbox.com",
+                        "https://api.stripe.com",
+                        "https://checkout.stripe.com",
+                        "https://m.stripe.com",
                     ],
                     styleSrc: [
                         "'self'",
@@ -81,6 +102,12 @@ function setupMiddleware(app) {
                         "'self'",
                         "https://fonts.gstatic.com",
                         "https://cdnjs.cloudflare.com",
+                    ],
+                    formAction: [
+                        "'self'",
+                        "http://localhost:8080",
+                        "http://localhost:3000",
+                        "https://checkout.stripe.com",
                     ],
                 },
             },
@@ -145,6 +172,7 @@ function setupMiddleware(app) {
         res.locals.error    = req.flash("error");
         res.locals.mapToken = config.mapbox.token;
         res.locals.currUser = req.user;
+        res.locals.stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
         next();
     });
 }

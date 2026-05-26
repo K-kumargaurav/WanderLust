@@ -1,0 +1,29 @@
+<% layout("/layouts/boilerplate") %>
+
+<div style="min-height:calc(100vh - 68px);display:flex;
+            align-items:center;justify-content:center;padding:2rem">
+  <div style="text-align:center;max-width:480px">
+
+    <div style="font-size:4rem;margin-bottom:1rem">&#x274C;</div>
+
+    <h1 style="font-family:var(--font-display);font-size:2rem;
+               font-weight:400;margin-bottom:0.5rem">
+      Payment Cancelled
+    </h1>
+
+    <p style="color:var(--charcoal-60);margin-bottom:2rem;line-height:1.7">
+      You cancelled the payment. Your booking request was not saved.
+      No charges were made to your card.
+    </p>
+
+    <div style="display:flex;gap:1rem;justify-content:center">
+      <a href="/listings" class="btn btn-primary">
+        <i class="fa-solid fa-magnifying-glass"></i> Browse Listings
+      </a>
+      <a href="/bookings" class="btn btn-outline">
+        My Bookings
+      </a>
+    </div>
+
+  </div>
+</div>

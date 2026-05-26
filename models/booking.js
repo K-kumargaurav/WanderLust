@@ -49,7 +49,22 @@ const bookingSchema = new Schema({
     status: {
         type: String,
         enum: Object.values(BOOKING_STATUS),
-        default: BOOKING_STATUS.PENDING,
+        default: BOOKING_STATUS.CONFIRMED,
+    },
+
+    // ─── Stripe Payment Fields ──────────────────────────────────────────────
+    stripeSessionId: {
+        type: String,
+        default: null,
+    },
+    stripePaymentIntentId: {
+        type: String,
+        default: null,
+    },
+    paymentStatus: {
+        type: String,
+        enum: ["unpaid", "paid", "refunded"],
+        default: "unpaid",
     },
     createdAt: {
         type: Date,
@@ -61,6 +76,8 @@ const bookingSchema = new Schema({
 bookingSchema.index({ listing: 1, status: 1 });
 bookingSchema.index({ guest: 1, createdAt: -1 });
 bookingSchema.index({ listing: 1, checkIn: 1, checkOut: 1 });
+bookingSchema.index({ stripeSessionId: 1 });
+bookingSchema.index({ stripePaymentIntentId: 1 });
 
 // ─── Virtuals ────────────────────────────────────────────────────────────────
 bookingSchema.virtual("durationLabel").get(function () {
@@ -76,7 +93,7 @@ bookingSchema.statics.findOverlapping = function (
 ) {
     const query = {
         listing: listingId,
-        status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
+        status: BOOKING_STATUS.CONFIRMED,
         checkIn: { $lt: checkOut },
         checkOut: { $gt: checkIn },
     };

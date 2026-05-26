@@ -13,28 +13,20 @@ router.post(
     wrapAsync(bookingController.createBooking)
 );
 
+// Payment redirect handlers (must be before :bookingId routes)
+router.get(
+    "/bookings/payment/success",
+    isLoggedIn,
+    wrapAsync(bookingController.paymentSuccess)
+);
+
+router.get(
+    "/bookings/payment/cancel",
+    isLoggedIn,
+    wrapAsync(bookingController.paymentCancel)
+);
+
 // Mounted at /
-router.delete(
-    "/bookings/:bookingId",
-    isLoggedIn,
-    validateCsrf,
-    wrapAsync(bookingController.cancelBooking)
-);
-
-router.put(
-    "/bookings/:bookingId/confirm",
-    isLoggedIn,
-    validateCsrf,
-    wrapAsync(bookingController.confirmBooking)
-);
-
-router.put(
-    "/bookings/:bookingId/reject",
-    isLoggedIn,
-    validateCsrf,
-    wrapAsync(bookingController.rejectBooking)
-);
-
 router.get(
     "/bookings",
     isLoggedIn,

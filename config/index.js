@@ -9,6 +9,9 @@ const REQUIRED_KEYS = [
   "CLOUD_NAME",
   "CLOUD_API_KEY",
   "CLOUD_API_SECRET",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_PUBLISHABLE_KEY",
+  "STRIPE_WEBHOOK_SECRET",
 ];
 
 for (const key of REQUIRED_KEYS) {
@@ -56,6 +59,17 @@ const config = Object.freeze({
     port: parseInt(process.env.SMTP_PORT) || 587,
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
+  }),
+
+  stripe: Object.freeze({
+    secretKey: process.env.STRIPE_SECRET_KEY,
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    currency: "usd",
+    successUrl: (host) =>
+      `http${process.env.NODE_ENV === "production" ? "s" : ""}://${host}/bookings/payment/success`,
+    cancelUrl: (host) =>
+      `http${process.env.NODE_ENV === "production" ? "s" : ""}://${host}/bookings/payment/cancel`,
   }),
 
   auth: Object.freeze({

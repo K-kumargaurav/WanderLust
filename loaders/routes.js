@@ -1,8 +1,11 @@
-const listingRouter = require("../route/listing");
-const reviewRouter  = require("../route/review");
-const userRouter    = require("../route/user");
-const bookingRouter = require("../route/booking");
-const AppError      = require("../utils/expressErr");
+const express           = require("express");
+const listingRouter     = require("../route/listing");
+const reviewRouter      = require("../route/review");
+const userRouter        = require("../route/user");
+const bookingRouter     = require("../route/booking");
+const bookingController = require("../Controllers/booking");
+const wrapAsync         = require("../utils/wrapAsync");
+const AppError          = require("../utils/expressErr");
 
 /**
  * Mounts all route handlers and error middleware on the app.
@@ -19,6 +22,12 @@ function setupRoutes(app) {
     // ─── Static pages ────────────────────────────────────────────────────
     app.get("/privacy", (req, res) => res.render("pages/privacy"));
     app.get("/terms", (req, res) => res.render("pages/terms"));
+
+    // ─── Booked dates API (before listing router to avoid :id conflict) ──
+    app.get(
+        "/listings/:id/booked-dates",
+        wrapAsync(bookingController.getBookedDates)
+    );
 
     // ─── Feature routes ──────────────────────────────────────────────────
     app.use("/listings", listingRouter);
