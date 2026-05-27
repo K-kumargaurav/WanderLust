@@ -1,5 +1,7 @@
 const Listing = require("../models/listing");
 const Review  = require("../models/review");
+const User    = require("../models/user.js");
+const { sendNewReviewNotificationToHost } = require("../services/email.service.js");
 
 /**
  * Creates a new review and attaches it to the given listing.
@@ -27,6 +29,21 @@ module.exports.createReview = async (req, res) => {
     listing.reviews.push(newReview);
     await newReview.save();
     await listing.save();
+
+    // Notify listing owner of new review (skip if reviewer IS the owner)
+    try {
+        const owner = await User.findById(listing.owner);
+        if (owner && !listing.owner.equals(req.user._id)) {
+            await sendNewReviewNotificationToHost(
+                owner.email,
+                newReview,
+                listing,
+                req.user.username
+            );
+        }
+    } catch (emailErr) {
+        console.error("[email] review notification to host failed:", emailErr.message);
+    }
 
     req.flash("success", "Review posted!");
     res.redirect(`/listings/${listing.id}`);

@@ -39,4 +39,20 @@ router.get(
     wrapAsync(bookingController.renderHostBookings)
 );
 
+// Guest cancels their own booking
+router.post(
+    "/bookings/:id/cancel",
+    isLoggedIn,
+    validateCsrf,
+    wrapAsync(bookingController.cancelBooking)
+);
+
+// Host rejects a booking on their listing
+router.post(
+    "/bookings/:id/reject",
+    isLoggedIn,
+    validateCsrf,
+    wrapAsync(bookingController.rejectBooking)
+);
+
 module.exports = router;

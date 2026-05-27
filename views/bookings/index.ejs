@@ -282,6 +282,32 @@
               <% } %>
             </div>
 
+            <% if (
+              b.status === 'confirmed' &&
+              b.paymentStatus === 'paid' &&
+              new Date(b.checkIn) > new Date()
+            ) { %>
+              <form
+                action="/bookings/<%= b._id %>/cancel"
+                method="POST"
+                id="cancel-form-<%= b._id %>"
+                style="margin-top:0.75rem"
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm cancel-booking-btn"
+                  data-booking-id="<%= b._id %>"
+                  data-listing="<%= b.listing ? b.listing.title : 'this listing' %>"
+                  data-checkin="<%= new Date(b.checkIn).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) %>"
+                  data-checkout="<%= new Date(b.checkOut).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) %>"
+                  data-total="<%= (b.totalPrice ?? 0).toLocaleString('en-IN') %>"
+                >
+                  <i class="fa-regular fa-circle-xmark"></i> Cancel Booking
+                </button>
+              </form>
+            <% } %>
+
           </div>
         </div>
       <% } %>

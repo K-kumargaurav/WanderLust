@@ -39,6 +39,25 @@ module.exports.handleStripeWebhook = async (req, res) => {
                             : session.payment_intent?.id;
                     booking.paymentStatus = "paid";
                     await booking.save();
+
+                    // Send confirmation email (backup trigger)
+                    try {
+                        const populatedBooking = await Booking.findById(booking._id)
+                            .populate("listing")
+                            .populate("guest");
+
+                        if (populatedBooking.guest?.email) {
+                            const { sendBookingConfirmedToGuest } =
+                                require("../services/email.service.js");
+                            await sendBookingConfirmedToGuest(
+                                populatedBooking.guest.email,
+                                populatedBooking
+                            );
+                        }
+                    } catch (emailErr) {
+                        console.error("[email] webhook confirmation email failed:", emailErr.message);
+                    }
+
                     console.log(
                         `[webhook] Booking ${booking._id} marked as paid.`
                     );

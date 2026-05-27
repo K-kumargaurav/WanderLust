@@ -4,7 +4,15 @@ const { BOOKING_STATUS, GST_RATE } = require("../utils/constants.js");
 const {
     createCheckoutSession,
     retrieveSession,
+    issueRefund,
 } = require("../services/payment.service.js");
+const {
+    sendBookingRequestToGuest,
+    sendBookingNotificationToHost,
+    sendBookingConfirmedToGuest,
+    sendBookingCancelledToGuest,
+    sendCancellationNotificationToHost,
+} = require("../services/email.service.js");
 
 const ONE_DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -61,6 +69,16 @@ module.exports.createBooking = async (req, res) => {
         paymentStatus: "unpaid",
     });
     await booking.save();
+
+    // Notify guest that booking request was received (best effort)
+    try {
+        await sendBookingRequestToGuest(req.user.email, {
+            ...booking.toObject(),
+            listing,
+        });
+    } catch (emailErr) {
+        console.error("[email] booking request to guest failed:", emailErr.message);
+    }
 
     // Create Stripe Checkout Session and redirect guest to payment page
     let checkoutResult;
@@ -176,12 +194,52 @@ module.exports.paymentSuccess = async (req, res) => {
         return req.session.save(() => res.redirect("/bookings"));
     }
 
+    // payment_intent can be a string ID or an expanded object
+    const paymentIntentId = typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id;
+
+    console.log("[payment] paymentIntentId to save:", paymentIntentId);
+    console.log("[payment] session.payment_intent:", session.payment_intent);
+    console.log("[payment] session.payment_intent type:", typeof session.payment_intent);
+
     // Update payment and status fields
-    booking.stripePaymentIntentId =
-        session.payment_intent?.id || session.payment_intent;
+    booking.stripePaymentIntentId = paymentIntentId;
     booking.paymentStatus = "paid";
     booking.status = BOOKING_STATUS.CONFIRMED;
     await booking.save();
+
+    console.log("[payment] booking saved with paymentIntentId:", booking.stripePaymentIntentId);
+
+    // 1. Confirm payment to guest
+    try {
+        const populatedBooking = await Booking.findById(booking._id)
+            .populate("listing")
+            .populate("guest");
+
+        await sendBookingConfirmedToGuest(
+            populatedBooking.guest.email,
+            populatedBooking
+        );
+    } catch (emailErr) {
+        console.error("[email] booking confirmed to guest failed:", emailErr.message);
+    }
+
+    // 2. Notify host of new booking
+    try {
+        const populatedBooking = await Booking.findById(booking._id)
+            .populate({ path: "listing", populate: { path: "owner" } })
+            .populate("guest");
+
+        if (populatedBooking.listing.owner?.email) {
+            await sendBookingNotificationToHost(
+                populatedBooking.listing.owner.email,
+                populatedBooking
+            );
+        }
+    } catch (emailErr) {
+        console.error("[email] booking notification to host failed:", emailErr.message);
+    }
 
     req.flash("success", "Booking confirmed! Enjoy your stay.");
     return req.session.save(() => res.redirect("/bookings"));
@@ -207,6 +265,156 @@ module.exports.paymentCancel = async (req, res) => {
 
     req.flash("error", "Payment cancelled. Your booking was not confirmed.");
     return req.session.save(() => res.redirect("/listings"));
+};
+
+/**
+ * Cancels a confirmed booking (guest-initiated).
+ * Sends notification emails to both guest and host.
+ *
+ * @route   POST /bookings/:id/cancel
+ * @access  Authenticated (booking guest only)
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+module.exports.cancelBooking = async (req, res) => {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+        req.flash("error", "Booking not found.");
+        return req.session.save(() => res.redirect("/bookings"));
+    }
+
+    if (!booking.guest.equals(req.user._id)) {
+        req.flash("error", "You can only cancel your own bookings.");
+        return req.session.save(() => res.redirect("/bookings"));
+    }
+
+    console.log("[cancel] booking fields:", {
+        id:                    booking._id,
+        status:                booking.status,
+        paymentStatus:         booking.paymentStatus,
+        stripePaymentIntentId: booking.stripePaymentIntentId,
+        stripeSessionId:       booking.stripeSessionId,
+    });
+
+    // Issue Stripe refund if booking was paid
+    if (booking.paymentStatus === "paid") {
+        let paymentIntentId = booking.stripePaymentIntentId;
+
+        // Fallback: retrieve paymentIntentId from Stripe session
+        if (!paymentIntentId && booking.stripeSessionId) {
+            try {
+                const session = await retrieveSession(booking.stripeSessionId);
+                paymentIntentId = typeof session.payment_intent === "string"
+                    ? session.payment_intent
+                    : session.payment_intent?.id;
+
+                // Save it for future use
+                booking.stripePaymentIntentId = paymentIntentId;
+                console.log("[cancel] retrieved paymentIntentId from session:", paymentIntentId);
+            } catch (sessionErr) {
+                console.error("[cancel] could not retrieve session:", sessionErr.message);
+            }
+        }
+
+        if (paymentIntentId) {
+            try {
+                await issueRefund(paymentIntentId, booking._id.toString());
+                booking.paymentStatus = "refunded";
+                console.log("[cancel] refund issued for:", paymentIntentId);
+            } catch (refundErr) {
+                console.error("[cancel] refund failed:", refundErr.message);
+                req.flash("error", "Refund failed. Please contact support.");
+                return req.session.save(() => res.redirect("/bookings"));
+            }
+        } else {
+            console.error("[cancel] no paymentIntentId found — refund skipped");
+        }
+    }
+
+    booking.status = BOOKING_STATUS.CANCELLED;
+    await booking.save();
+
+    // 1. Confirm cancellation to guest
+    try {
+        const populatedBooking = await Booking.findById(booking._id)
+            .populate("listing")
+            .populate("guest");
+
+        await sendBookingCancelledToGuest(
+            populatedBooking.guest.email,
+            populatedBooking,
+            "cancelled"
+        );
+    } catch (emailErr) {
+        console.error("[email] cancellation to guest failed:", emailErr.message);
+    }
+
+    // 2. Notify host of cancellation
+    try {
+        const populatedBooking = await Booking.findById(booking._id)
+            .populate({ path: "listing", populate: { path: "owner" } })
+            .populate("guest");
+
+        if (populatedBooking.listing.owner?.email) {
+            await sendCancellationNotificationToHost(
+                populatedBooking.listing.owner.email,
+                populatedBooking
+            );
+        }
+    } catch (emailErr) {
+        console.error("[email] cancellation notification to host failed:", emailErr.message);
+    }
+
+    req.flash("success", "Booking cancelled.");
+    return req.session.save(() => res.redirect("/bookings"));
+};
+
+/**
+ * Rejects a booking (host-initiated).
+ * Sends rejection email to the guest.
+ *
+ * @route   POST /bookings/:id/reject
+ * @access  Authenticated (listing owner only)
+ *
+ * @param   {import('express').Request}  req
+ * @param   {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+module.exports.rejectBooking = async (req, res) => {
+    const booking = await Booking.findById(req.params.id)
+        .populate("listing");
+    if (!booking) {
+        req.flash("error", "Booking not found.");
+        return req.session.save(() => res.redirect("/host/bookings"));
+    }
+
+    if (!booking.listing.owner.equals(req.user._id)) {
+        req.flash("error", "You can only reject bookings on your own listings.");
+        return req.session.save(() => res.redirect("/host/bookings"));
+    }
+
+    booking.status = BOOKING_STATUS.CANCELLED;
+    await booking.save();
+
+    // Notify guest of rejection
+    try {
+        const populatedBooking = await Booking.findById(booking._id)
+            .populate("listing")
+            .populate("guest");
+
+        await sendBookingCancelledToGuest(
+            populatedBooking.guest.email,
+            populatedBooking,
+            "rejected"
+        );
+    } catch (emailErr) {
+        console.error("[email] rejection email to guest failed:", emailErr.message);
+    }
+
+    req.flash("success", "Booking rejected.");
+    return req.session.save(() => res.redirect("/host/bookings"));
 };
 
 /**

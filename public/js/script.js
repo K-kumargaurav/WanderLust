@@ -283,6 +283,34 @@ function showConfirmModal(title, body, confirmText = 'Confirm',
   });
 }
 
+// ─── Cancel Booking ───────────────────────────────────────────────────────
+document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const { bookingId, listing, checkin, checkout, total } = btn.dataset;
+
+    const confirmed = await showConfirmModal(
+      'Cancel this booking?',
+      `<strong>${listing}</strong><br><br>
+       Check-in:  <strong>${checkin}</strong><br>
+       Check-out: <strong>${checkout}</strong><br><br>
+       <span style="color:var(--charcoal-60)">
+         A full refund of
+         <strong>₹${total}</strong>
+         will be processed in 5–10 business days.
+       </span><br><br>
+       <span style="color:#c0392b;font-size:0.875rem">
+         This action cannot be undone.
+       </span>`,
+      'Yes, Cancel Booking',
+      'btn-danger'
+    );
+
+    if (confirmed) {
+      document.getElementById('cancel-form-' + bookingId).submit();
+    }
+  });
+});
+
 // ─── Scroll to Top ────────────────────────────────────────────────────────
 const scrollTopBtn = document.getElementById('scroll-top-btn');
 if (scrollTopBtn) {
