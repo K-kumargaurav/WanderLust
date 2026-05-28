@@ -1,0 +1,322 @@
+<% layout("/layouts/boilerplate") %>
+
+<div style="max-width:1100px;margin:2rem auto;padding:0 2rem 4rem">
+
+  <!-- Header -->
+  <div style="margin-bottom:0.25rem">
+    <a href="/listings/<%= listing._id %>"
+       style="font-size:0.8rem;color:var(--sand);text-decoration:none;
+              display:inline-flex;align-items:center;gap:0.3rem">
+      <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i>
+      Back to listing
+    </a>
+  </div>
+
+  <div style="display:flex;align-items:flex-start;
+              justify-content:space-between;flex-wrap:wrap;
+              gap:1rem;margin-bottom:2rem">
+    <div>
+      <h1 style="font-family:var(--font-display);font-size:2rem;
+                 font-weight:400;margin-bottom:0.25rem">
+        Analytics
+      </h1>
+      <p style="color:var(--sand);font-size:0.875rem;margin:0">
+        <i class="fa-solid fa-house"
+           style="color:var(--terra);margin-right:4px"></i>
+        <%= listing.title %>
+        &nbsp;·&nbsp;
+        <%= listing.location %>, <%= listing.country %>
+      </p>
+    </div>
+    <a href="/listings/<%= listing._id %>/edit"
+       class="btn btn-outline btn-sm">
+      <i class="fa-regular fa-pen-to-square"></i> Edit Listing
+    </a>
+  </div>
+
+  <!-- ── Overview Cards ──────────────────────────────────────── -->
+  <div style="display:grid;
+              grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+              gap:1rem;margin-bottom:2.5rem">
+
+    <%
+      const cards = [
+        {
+          icon:  'fa-eye',
+          label: 'Total Views',
+          value: totalViews.toLocaleString('en-IN'),
+          color: '#3B82F6',
+          bg:    '#EFF6FF',
+        },
+        {
+          icon:  'fa-heart',
+          label: 'Wishlist Saves',
+          value: wishlistSaves.toLocaleString('en-IN'),
+          color: '#EF4444',
+          bg:    '#FEF2F2',
+        },
+        {
+          icon:  'fa-calendar-check',
+          label: 'Confirmed Bookings',
+          value: totalBookings.toLocaleString('en-IN'),
+          color: '#10B981',
+          bg:    '#ECFDF5',
+        },
+        {
+          icon:  'fa-indian-rupee-sign',
+          label: 'Total Revenue',
+          value: '₹' + totalRevenue.toLocaleString('en-IN'),
+          color: '#C0602A',
+          bg:    '#FDF5F0',
+        },
+      ];
+    %>
+
+    <% for (const card of cards) { %>
+      <div style="background:var(--white);border:1.5px solid
+                  var(--charcoal-20);border-radius:var(--radius-lg);
+                  padding:1.5rem">
+        <div style="display:flex;align-items:center;
+                    justify-content:space-between;margin-bottom:0.75rem">
+          <span style="font-size:0.75rem;font-weight:600;
+                       text-transform:uppercase;letter-spacing:0.06em;
+                       color:var(--sand)">
+            <%= card.label %>
+          </span>
+          <div style="width:36px;height:36px;border-radius:50%;
+                      background:<%= card.bg %>;display:flex;
+                      align-items:center;justify-content:center">
+            <i class="fa-solid <%= card.icon %>"
+               style="color:<%= card.color %>;font-size:0.875rem"></i>
+          </div>
+        </div>
+        <div style="font-family:var(--font-display);font-size:1.75rem;
+                    font-weight:500;color:var(--charcoal);line-height:1">
+          <%= card.value %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ── Performance Stats ────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;
+              gap:1rem;margin-bottom:2.5rem">
+
+    <!-- Avg Stay Length -->
+    <div style="background:var(--white);border:1.5px solid
+                var(--charcoal-20);border-radius:var(--radius-lg);
+                padding:1.5rem;text-align:center">
+      <div style="font-size:0.75rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:0.06em;
+                  color:var(--sand);margin-bottom:0.5rem">
+        Avg Stay Length
+      </div>
+      <div style="font-family:var(--font-display);font-size:2.5rem;
+                  font-weight:400;color:var(--charcoal);line-height:1">
+        <%= avgStayLength %>
+      </div>
+      <div style="font-size:0.8rem;color:var(--sand);margin-top:0.3rem">
+        nights per booking
+      </div>
+    </div>
+
+    <!-- Occupancy Rate -->
+    <div style="background:var(--white);border:1.5px solid
+                var(--charcoal-20);border-radius:var(--radius-lg);
+                padding:1.5rem;text-align:center">
+      <div style="font-size:0.75rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:0.06em;
+                  color:var(--sand);margin-bottom:0.5rem">
+        Occupancy Rate
+      </div>
+      <div style="font-family:var(--font-display);font-size:2.5rem;
+                  font-weight:400;color:var(--charcoal);line-height:1">
+        <%= occupancyRate %>%
+      </div>
+      <div style="font-size:0.8rem;color:var(--sand);margin-top:0.3rem">
+        last 90 days
+      </div>
+      <!-- Progress bar -->
+      <div style="margin-top:0.75rem;height:6px;
+                  background:var(--charcoal-20);border-radius:999px;
+                  overflow:hidden">
+        <div style="height:100%;width:<%= occupancyRate %>%;
+                    background:var(--terra);border-radius:999px;
+                    transition:width 1s ease"></div>
+      </div>
+    </div>
+
+    <!-- Most Popular Month -->
+    <div style="background:var(--white);border:1.5px solid
+                var(--charcoal-20);border-radius:var(--radius-lg);
+                padding:1.5rem;text-align:center">
+      <div style="font-size:0.75rem;font-weight:600;
+                  text-transform:uppercase;letter-spacing:0.06em;
+                  color:var(--sand);margin-bottom:0.5rem">
+        Most Popular Month
+      </div>
+      <div style="font-family:var(--font-display);font-size:2rem;
+                  font-weight:400;color:var(--charcoal);line-height:1.2">
+        <%= popularMonth %>
+      </div>
+      <div style="font-size:0.8rem;color:var(--sand);margin-top:0.3rem">
+        most bookings
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Monthly Revenue Chart ────────────────────────────────── -->
+  <div style="background:var(--white);border:1.5px solid
+              var(--charcoal-20);border-radius:var(--radius-lg);
+              padding:1.75rem;margin-bottom:1.5rem">
+
+    <h2 style="font-family:var(--font-display);font-size:1.3rem;
+               font-weight:400;margin-bottom:0.25rem">
+      Monthly Revenue
+    </h2>
+    <p style="font-size:0.8rem;color:var(--sand);margin-bottom:1.75rem">
+      Last 6 months · confirmed bookings only
+    </p>
+
+    <div style="display:flex;align-items:flex-end;gap:0.75rem;
+                height:200px;padding-bottom:2rem;
+                border-bottom:1.5px solid var(--charcoal-20);
+                position:relative">
+
+      <% for (const [month, data] of Object.entries(monthlyData)) { %>
+        <%
+          const pct = maxMonthlyRevenue > 0
+            ? Math.round((data.revenue / maxMonthlyRevenue) * 100)
+            : 0;
+          const hasData = data.revenue > 0;
+        %>
+
+        <div style="flex:1;display:flex;flex-direction:column;
+                    align-items:center;gap:0.5rem;height:100%;
+                    justify-content:flex-end">
+
+          <!-- Value label -->
+          <div style="font-size:0.7rem;color:var(--charcoal-60);
+                      font-weight:600;text-align:center;
+                      min-height:1rem">
+            <% if (hasData) { %>
+              ₹<%= (data.revenue/1000).toFixed(0) %>k
+            <% } %>
+          </div>
+
+          <!-- Bar -->
+          <div style="width:100%;background:var(--ivory-dark);
+                      border-radius:4px 4px 0 0;
+                      height:<%= Math.max(pct, hasData ? 4 : 0) %>%;
+                      background:<%= hasData
+                        ? 'var(--terra)' : 'var(--charcoal-20)' %>;
+                      transition:height 0.8s ease;
+                      position:relative;min-height:<%= hasData ? 4 : 0 %>px"
+               title="<%= data.bookings %> booking<%=
+                 data.bookings !== 1 ? 's' : '' %> ·
+                 ₹<%= data.revenue.toLocaleString('en-IN') %>">
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Month labels -->
+    <div style="display:flex;gap:0.75rem;margin-top:0.5rem">
+      <% for (const month of Object.keys(monthlyData)) { %>
+        <div style="flex:1;text-align:center;font-size:0.7rem;
+                    color:var(--sand)">
+          <%= month.split(' ')[0] %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ── Booking Breakdown ─────────────────────────────────────── -->
+  <div style="background:var(--white);border:1.5px solid
+              var(--charcoal-20);border-radius:var(--radius-lg);
+              padding:1.75rem;margin-bottom:1.5rem">
+
+    <h2 style="font-family:var(--font-display);font-size:1.3rem;
+               font-weight:400;margin-bottom:1.5rem">
+      Booking Breakdown
+    </h2>
+
+    <%
+      const total = totalBookings + cancelledCount;
+      const confirmedPct = total > 0
+        ? Math.round((totalBookings / total) * 100) : 0;
+      const cancelledPct = total > 0
+        ? Math.round((cancelledCount / total) * 100) : 0;
+    %>
+
+    <% if (total === 0) { %>
+      <p style="color:var(--sand);font-size:0.875rem">
+        No bookings yet.
+      </p>
+    <% } else { %>
+
+      <!-- Confirmed -->
+      <div style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;
+                    margin-bottom:0.35rem;font-size:0.875rem">
+          <span style="display:flex;align-items:center;gap:0.5rem">
+            <span style="width:10px;height:10px;border-radius:50%;
+                         background:#10B981;display:inline-block">
+            </span>
+            Confirmed
+          </span>
+          <span style="font-weight:600">
+            <%= totalBookings %>
+            (<%= confirmedPct %>%)
+          </span>
+        </div>
+        <div style="height:8px;background:var(--charcoal-20);
+                    border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:<%= confirmedPct %>%;
+                      background:#10B981;border-radius:999px">
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancelled -->
+      <div>
+        <div style="display:flex;justify-content:space-between;
+                    margin-bottom:0.35rem;font-size:0.875rem">
+          <span style="display:flex;align-items:center;gap:0.5rem">
+            <span style="width:10px;height:10px;border-radius:50%;
+                         background:#EF4444;display:inline-block">
+            </span>
+            Cancelled
+          </span>
+          <span style="font-weight:600">
+            <%= cancelledCount %>
+            (<%= cancelledPct %>%)
+          </span>
+        </div>
+        <div style="height:8px;background:var(--charcoal-20);
+                    border-radius:999px;overflow:hidden">
+          <div style="height:100%;width:<%= cancelledPct %>%;
+                      background:#EF4444;border-radius:999px">
+          </div>
+        </div>
+      </div>
+
+    <% } %>
+  </div>
+
+  <!-- ── Quick Actions ─────────────────────────────────────────── -->
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+    <a href="/listings/<%= listing._id %>" class="btn btn-outline">
+      <i class="fa-regular fa-eye"></i> View Listing
+    </a>
+    <a href="/listings/<%= listing._id %>/edit" class="btn btn-outline">
+      <i class="fa-regular fa-pen-to-square"></i> Edit Listing
+    </a>
+    <a href="/host/bookings" class="btn btn-outline">
+      <i class="fa-regular fa-calendar-check"></i> View Bookings
+    </a>
+    <a href="/profile" class="btn btn-outline">
+      <i class="fa-regular fa-user"></i> My Profile
+    </a>
+  </div>
+</div>

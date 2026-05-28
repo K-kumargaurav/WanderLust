@@ -11,7 +11,8 @@
     "dev": "nodemon app.js",
     "seed": "node init/index.js",
     "test": "jest --forceExit --detectOpenHandles",
-    "migrate:bookings": "node init/migrate-bookings.js"
+    "migrate:bookings": "node init/migrate-bookings.js",
+    "migrate:wishlist": "node init/migrate-wishlist-counts.js"
   },
   "author": "",
   "license": "ISC",

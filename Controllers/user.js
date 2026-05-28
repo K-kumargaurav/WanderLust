@@ -368,6 +368,17 @@ module.exports.toggleWishlist = async (req, res) => {
     }
     await user.save();
 
+    if (idx === -1) {
+        // Added to wishlist
+        await Listing.findByIdAndUpdate(id, { $inc: { wishlistCount: 1 } });
+    } else {
+        // Removed from wishlist — don't go below 0
+        await Listing.findByIdAndUpdate(id, {
+            $inc: { wishlistCount: -1 },
+            $max: { wishlistCount: 0 },  // floor at 0
+        });
+    }
+
     // For AJAX requests, return JSON
     if (req.xhr || req.headers.accept?.includes("application/json")) {
         return res.json({ wishlisted: idx === -1 });

@@ -64,6 +64,19 @@ const listingSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+
+    // ─── Analytics Fields ──────────────────────────────────────────
+    viewCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+
+    wishlistCount: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
 });
 
 // ─── Indexes ─────────────────────────────────────────────────────────────────
@@ -72,6 +85,7 @@ listingSchema.index({ owner: 1 });
 listingSchema.index({ createdAt: -1 });
 listingSchema.index({ category: 1 });
 listingSchema.index({ price: 1 });
+listingSchema.index({ viewCount: -1 });
 
 // Virtual: backward-compat getter for single image access
 listingSchema.virtual("image").get(function () {

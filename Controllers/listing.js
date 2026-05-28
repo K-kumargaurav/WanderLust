@@ -111,6 +111,16 @@ module.exports.showListing = async (req, res) => {
         return res.redirect("/listings");
     }
 
+    // Track view — deduplicate per session, skip if viewer is the owner
+    const sessionKey = "viewed_" + id;
+    if (!req.session[sessionKey]) {
+        const viewerId = req.user?._id;
+        if (!viewerId || !listing.owner._id.equals(viewerId)) {
+            await Listing.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+            req.session[sessionKey] = true;
+        }
+    }
+
     res.render("listings/show.ejs", { listing });
 };
 

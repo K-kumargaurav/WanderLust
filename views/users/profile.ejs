@@ -65,15 +65,34 @@
     <% if (myListings.length > 0) { %>
       <div class="profile-listings-grid">
         <% for (const listing of myListings) { %>
-          <a href="/listings/<%= listing._id %>" class="profile-listing-card">
-            <img src="<%= listing.images && listing.images.length > 0 ? listing.images[0].url : '' %>" alt="<%= listing.title %>" />
-            <div class="profile-listing-info">
-              <div class="profile-listing-title"><%= listing.title %></div>
-              <div class="profile-listing-meta">
-                <%= listing.location %> &middot; &#8377;<%= listing.price.toLocaleString("en-IN") %>/night
+          <div style="position:relative">
+            <a href="/listings/<%= listing._id %>" class="profile-listing-card">
+              <img src="<%= listing.images?.[0]?.url || '' %>" alt="<%= listing.title %>" />
+              <div class="profile-listing-info">
+                <div class="profile-listing-title"><%= listing.title %></div>
+                <div class="profile-listing-meta">
+                  <%= listing.location %> · &#8377;<%= listing.price.toLocaleString("en-IN") %>/night
+                </div>
               </div>
-            </div>
-          </a>
+            </a>
+
+            <!-- Analytics link below each listing card -->
+            <a href="/listings/<%= listing._id %>/analytics"
+               style="display:flex;align-items:center;gap:0.4rem;
+                      padding:0.5rem 0.75rem;
+                      font-size:0.75rem;font-weight:600;
+                      color:var(--terra);text-decoration:none;
+                      border:1px solid var(--terra-pale);
+                      border-top:none;
+                      border-radius:0 0 var(--radius-md) var(--radius-md);
+                      background:var(--terra-pale);
+                      transition:background var(--transition)"
+               onmouseover="this.style.background='#F0D5C8'"
+               onmouseout="this.style.background='var(--terra-pale)'">
+              <i class="fa-solid fa-chart-simple" style="font-size:0.7rem"></i>
+              View Analytics
+            </a>
+          </div>
         <% } %>
       </div>
     <% } else { %>

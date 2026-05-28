@@ -47,9 +47,10 @@
 
   /* ─── Table (desktop) ───────────────────────────────────────────── */
   .host-table-wrap {
-    border: 1px solid var(--charcoal-20);
-    border-radius: var(--radius-md);
-    overflow: hidden;
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
     background: var(--white);
   }
 
@@ -57,6 +58,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.85rem;
+    min-width: 900px;
   }
 
   .host-table thead {
@@ -240,14 +242,15 @@
             <th>Status</th>
             <th>Payment</th>
             <th>Booked On</th>
-            <th></th>
+            <th style="min-width:160px">Actions</th>
           </tr>
         </thead>
         <tbody>
           <% for (const b of bookings) { %>
             <tr>
               <td>
-                <a href="/listings/<%= b.listing._id %>" class="host-table-listing">
+                <a href="/listings/<%= b.listing._id %>/analytics" class="host-table-listing"
+                   title="View analytics">
                   <%= b.listing.title %>
                 </a>
                 <span class="host-table-location"><%= b.listing.location %></span>
@@ -267,22 +270,22 @@
               </td>
               <td>
                 <% if (b.paymentStatus === 'paid') { %>
-                  <span style="background:#e6f4ea;color:#1a7f37;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x1F4B3; Paid</span>
+                  <span style="background:#e6f4ea;color:#1a7f37;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600;white-space:nowrap;min-width:100px">&#x1F4B3; Paid</span>
                 <% } else if (b.paymentStatus === 'unpaid') { %>
-                  <span style="background:#fff4e5;color:#b35c00;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x23F3; Awaiting Payment</span>
+                  <span style="background:#fff4e5;color:#b35c00;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600;white-space:nowrap;min-width:100px">&#x23F3; Awaiting Payment</span>
                 <% } else if (b.paymentStatus === 'refunded') { %>
-                  <span style="background:#fde8e8;color:#c33;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600">&#x21A9;&#xFE0F; Refunded</span>
+                  <span style="background:#fde8e8;color:#c33;padding:0.2rem 0.6rem;border-radius:999px;font-size:0.7rem;font-weight:600;white-space:nowrap;min-width:100px">&#x21A9;&#xFE0F; Refunded</span>
                 <% } %>
               </td>
               <td class="host-table-booked"><%= fmtShort(b.createdAt) %></td>
-              <td>
-                <form action="/conversations" method="POST" style="display:inline">
+              <td style="min-width:160px">
+                <form action="/conversations" method="POST">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                   <input type="hidden" name="listingId" value="<%= b.listing._id %>" />
                   <input type="hidden" name="recipientId" value="<%= b.guest._id %>" />
                   <input type="hidden" name="bookingId" value="<%= b._id %>" />
                   <input type="hidden" name="initialMessage" value="Hi! I wanted to reach out about your upcoming stay." />
-                  <button type="submit" class="btn btn-outline btn-sm">
+                  <button type="submit" class="btn btn-outline btn-sm" style="white-space:nowrap">
                     <i class="fa-regular fa-message"></i> Message Guest
                   </button>
                 </form>
@@ -299,7 +302,8 @@
         <div class="host-card">
           <div class="host-card-top">
             <div>
-              <a href="/listings/<%= b.listing._id %>" class="host-card-listing">
+              <a href="/listings/<%= b.listing._id %>/analytics" class="host-card-listing"
+                 title="View analytics">
                 <%= b.listing.title %>
               </a>
               <div class="host-card-location">

@@ -352,3 +352,71 @@ if (scrollTopBtn) {
   // Poll every 30 seconds
   setInterval(pollUnreadCount, 30000);
 })();
+
+// ─── Prevent Double Form Submission ──────────────────────────────────────
+// Disables submit buttons immediately after first click
+// Prevents duplicate bookings, messages, reviews, etc.
+
+document.addEventListener('DOMContentLoaded', function () {
+
+  document.querySelectorAll('form').forEach(function (form) {
+
+    // Skip booking form — has its own submit flow with confirmation modal
+    if (form.id === 'bookingForm') return;
+
+    form.addEventListener('submit', function () {
+
+      // Find all submit buttons in this form
+      const submitBtns = form.querySelectorAll(
+        'button[type="submit"], input[type="submit"], .btn-reserve'
+      );
+
+      submitBtns.forEach(function (btn) {
+
+        // Skip if already disabled (e.g. booking button before dates)
+        if (btn.disabled) return;
+
+        // Store original text
+        const originalText = btn.innerHTML;
+        const originalWidth = btn.offsetWidth;
+
+        // Lock width so button doesn't resize
+        btn.style.minWidth = originalWidth + 'px';
+
+        // Disable and show loading state
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.style.cursor  = 'not-allowed';
+
+        // Show spinner + text
+        btn.innerHTML =
+          '<i class="fa-solid fa-circle-notch fa-spin" ' +
+          'style="margin-right:0.4rem"></i>' +
+          'Please wait...';
+
+        // Safety net: re-enable after 10 seconds
+        // (in case of network error or redirect failure)
+        setTimeout(function () {
+          btn.disabled      = false;
+          btn.style.opacity = '1';
+          btn.style.cursor  = 'pointer';
+          btn.innerHTML     = originalText;
+        }, 10000);
+      });
+    });
+  });
+
+  // Special case: btn-reserve (booking submit)
+  // Re-enable if flatpickr selection changes after disable
+  const bookingForm = document.getElementById('bookingForm');
+  if (bookingForm) {
+    bookingForm.addEventListener('reset', function () {
+      const reserveBtn = document.getElementById('booking-submit-btn');
+      if (reserveBtn) {
+        reserveBtn.disabled      = false;
+        reserveBtn.style.opacity = '1';
+        reserveBtn.innerHTML     = 'Confirm Booking';
+      }
+    });
+  }
+});
