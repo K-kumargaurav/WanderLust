@@ -1,0 +1,210 @@
+<% layout("/layouts/boilerplate") %>
+
+<div style="max-width:780px;margin:2rem auto;padding:0 2rem 4rem">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:1rem;
+              margin-bottom:1.5rem;padding-bottom:1.5rem;
+              border-bottom:1px solid var(--charcoal-20)">
+    <a href="/conversations"
+       style="color:var(--charcoal-60);text-decoration:none;
+              font-size:1.1rem;flex-shrink:0">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+
+    <div style="flex:1;min-width:0">
+      <h1 style="font-family:var(--font-display);font-size:1.5rem;
+                 font-weight:400;margin:0 0 0.2rem">
+        @<%= otherParticipant?.username || 'Unknown' %>
+      </h1>
+      <p style="margin:0;font-size:0.8rem;color:var(--sand)">
+        <i class="fa-solid fa-house"
+           style="font-size:0.7rem;margin-right:3px"></i>
+        <%= conversation.listing?.title || 'Listing removed' %>
+        · <%= conversation.listing?.location || '' %>
+      </p>
+    </div>
+
+    <!-- Listing thumbnail -->
+    <% if (conversation.listing?.images?.[0]?.url) { %>
+      <a href="/listings/<%= conversation.listing._id %>">
+        <img src="<%= conversation.listing.images[0].url %>"
+             style="width:52px;height:52px;object-fit:cover;
+                    border-radius:var(--radius-md);flex-shrink:0"/>
+      </a>
+    <% } %>
+  </div>
+
+  <!-- Booking info banner if linked to a booking -->
+  <% if (conversation.booking) { %>
+    <div style="background:var(--terra-pale);border-radius:var(--radius-md);
+                padding:1rem 1.25rem;margin-bottom:1.5rem;
+                display:flex;align-items:center;gap:0.75rem;
+                font-size:0.875rem">
+      <i class="fa-regular fa-calendar-check"
+         style="color:var(--terra)"></i>
+      <span>
+        Booking:
+        <strong>
+          <%= new Date(conversation.booking.checkIn)
+            .toLocaleDateString('en-IN', {
+              day:'numeric', month:'short', year:'numeric'
+            }) %>
+        </strong>
+        →
+        <strong>
+          <%= new Date(conversation.booking.checkOut)
+            .toLocaleDateString('en-IN', {
+              day:'numeric', month:'short', year:'numeric'
+            }) %>
+        </strong>
+        ·
+        <span style="text-transform:capitalize">
+          <%= conversation.booking.status %>
+        </span>
+      </span>
+    </div>
+  <% } %>
+
+  <!-- Messages Thread -->
+  <div id="messages-thread"
+       style="display:flex;flex-direction:column;gap:0.75rem;
+              margin-bottom:2rem;min-height:200px">
+
+    <% if (messages.length === 0) { %>
+      <div style="text-align:center;padding:3rem;
+                  color:var(--charcoal-60);font-size:0.875rem">
+        No messages yet. Start the conversation below.
+      </div>
+    <% } %>
+
+    <% for (const msg of messages) { %>
+      <%
+        const isMine = msg.sender._id.toString() ===
+                       currUser._id.toString();
+      %>
+      <div style="display:flex;flex-direction:column;
+                  align-items:<%= isMine ? 'flex-end' : 'flex-start' %>">
+
+        <!-- Bubble -->
+        <div style="max-width:75%;padding:0.75rem 1rem;
+                    border-radius:<%= isMine
+                      ? '16px 16px 4px 16px'
+                      : '16px 16px 16px 4px' %>;
+                    background:<%= isMine
+                      ? 'var(--terra)'
+                      : 'var(--white)' %>;
+                    color:<%= isMine ? 'white' : 'var(--charcoal)' %>;
+                    border:<%= isMine
+                      ? 'none'
+                      : '1.5px solid var(--charcoal-20)' %>;
+                    font-size:0.925rem;line-height:1.6;
+                    word-break:break-word">
+          <%= msg.body %>
+        </div>
+
+        <!-- Meta -->
+        <div style="font-size:0.72rem;color:var(--sand);
+                    margin-top:0.25rem;
+                    display:flex;align-items:center;gap:0.4rem">
+          <span><%= msg.sender.username %></span>
+          <span>·</span>
+          <span>
+            <%= new Date(msg.createdAt).toLocaleTimeString('en-IN', {
+              hour:'2-digit', minute:'2-digit'
+            }) %>
+          </span>
+          <% if (isMine) { %>
+            <i class="fa-solid fa-check<%= msg.read
+              ? '-double' : '' %>"
+               style="font-size:0.65rem;
+                      color:<%= msg.read
+                        ? 'var(--terra)' : 'var(--sand)' %>">
+            </i>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Message Input Form -->
+  <div style="position:sticky;bottom:1rem;
+              background:var(--ivory);padding-top:1rem">
+    <form action="/conversations/<%= conversation._id %>/messages"
+          method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+      <div style="display:flex;gap:0.75rem;align-items:flex-end">
+        <textarea
+          name="body"
+          placeholder="Type a message..."
+          rows="2"
+          maxlength="2000"
+          required
+          style="flex:1;padding:0.75rem 1rem;
+                 border:1.5px solid var(--charcoal-20);
+                 border-radius:var(--radius-md);
+                 font-family:var(--font-body);font-size:0.925rem;
+                 color:var(--charcoal);background:var(--white);
+                 outline:none;resize:none;
+                 transition:border-color var(--transition)"
+          onfocus="this.style.borderColor='var(--terra)'"
+          onblur="this.style.borderColor='var(--charcoal-20)'"
+          id="message-input"
+        ></textarea>
+
+        <button type="submit"
+                style="height:52px;width:52px;border-radius:50%;
+                       background:var(--terra);color:white;
+                       border:none;cursor:pointer;flex-shrink:0;
+                       font-size:1rem;
+                       transition:background var(--transition),
+                                  transform var(--transition)"
+                onmouseover="this.style.background='var(--terra-light)';
+                             this.style.transform='scale(1.05)'"
+                onmouseout="this.style.background='var(--terra)';
+                            this.style.transform='scale(1)'">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+
+      <p style="font-size:0.72rem;color:var(--sand);
+                margin-top:0.4rem;text-align:right"
+         id="char-count">
+        0 / 2000
+      </p>
+    </form>
+  </div>
+</div>
+
+<!-- Auto scroll to bottom + char counter -->
+<script>
+(function () {
+  // Scroll to bottom of messages
+  const thread = document.getElementById('messages-thread');
+  if (thread) {
+    thread.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  // Character counter
+  const input     = document.getElementById('message-input');
+  const charCount = document.getElementById('char-count');
+
+  if (input && charCount) {
+    input.addEventListener('input', () => {
+      const len = input.value.length;
+      charCount.textContent = len + ' / 2000';
+      charCount.style.color = len > 1800
+        ? '#c0392b' : 'var(--sand)';
+    });
+
+    // Submit on Ctrl+Enter / Cmd+Enter
+    input.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.target.closest('form').submit();
+      }
+    });
+  }
+})();
+</script>

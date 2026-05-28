@@ -1,11 +1,12 @@
-const express           = require("express");
-const listingRouter     = require("../route/listing");
-const reviewRouter      = require("../route/review");
-const userRouter        = require("../route/user");
-const bookingRouter     = require("../route/booking");
-const bookingController = require("../Controllers/booking");
-const wrapAsync         = require("../utils/wrapAsync");
-const AppError          = require("../utils/expressErr");
+const express               = require("express");
+const listingRouter         = require("../route/listing");
+const reviewRouter          = require("../route/review");
+const userRouter            = require("../route/user");
+const bookingRouter         = require("../route/booking");
+const conversationRouter    = require("../route/conversation");
+const bookingController     = require("../Controllers/booking");
+const wrapAsync             = require("../utils/wrapAsync");
+const AppError              = require("../utils/expressErr");
 
 /**
  * Mounts all route handlers and error middleware on the app.
@@ -35,6 +36,7 @@ function setupRoutes(app) {
     app.use("/", userRouter);
     app.use("/listings/:id/bookings", bookingRouter);
     app.use("/", bookingRouter);
+    app.use("/", conversationRouter);
 
     // ─── 404 catch-all ───────────────────────────────────────────────────
     app.all(/(.*)/, (req, res, next) => {

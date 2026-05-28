@@ -173,7 +173,22 @@ function setupMiddleware(app) {
         res.locals.mapToken = config.mapbox.token;
         res.locals.currUser = req.user;
         res.locals.stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
-        next();
+        res.locals.unreadMessages = 0;
+
+        if (req.user) {
+            const Conversation = require("../models/conversation.js");
+            Conversation.find({ participants: req.user._id })
+                .then((convs) => {
+                    res.locals.unreadMessages = convs.reduce((sum, conv) => {
+                        return sum +
+                            (conv.unreadCount.get(req.user._id.toString()) || 0);
+                    }, 0);
+                    next();
+                })
+                .catch(() => next());
+        } else {
+            next();
+        }
     });
 }
 

@@ -351,6 +351,142 @@
   </div>
 </div>
 
+<script src="/js/map.js"></script>
+
+<% if (currUser && listing.owner &&
+       !currUser._id.equals(listing.owner._id)) { %>
+
+  <!-- Floating Message Host Button -->
+  <button
+    id="message-host-fab"
+    style="position:fixed;bottom:2rem;right:2rem;
+           z-index:950;
+           display:flex;align-items:center;gap:0.5rem;
+           padding:0.75rem 1.25rem;
+           background:var(--charcoal);color:white;
+           border:none;border-radius:999px;
+           font-family:var(--font-body);font-size:0.875rem;
+           font-weight:600;cursor:pointer !important;
+           pointer-events:all !important;user-select:none;
+           box-shadow:var(--shadow-lg);
+           transition:background var(--transition),
+                      transform var(--transition)"
+    onmouseover="this.style.background='var(--terra)';
+                 this.style.transform='translateY(-2px)'"
+    onmouseout="this.style.background='var(--charcoal)';
+                this.style.transform='translateY(0)'">
+    <i class="fa-regular fa-message"></i>
+    Message Host
+  </button>
+
+  <!-- Message Modal -->
+  <div id="message-host-modal"
+       class="preview-modal"
+       style="display:none;z-index:1500">
+    <div class="preview-modal-content" style="max-width:480px">
+
+      <div class="preview-modal-header">
+        <div>
+          <h2 style="font-family:var(--font-display);font-weight:400;
+                     font-size:1.4rem;margin:0 0 0.2rem">
+            Message Host
+          </h2>
+          <p style="margin:0;font-size:0.8rem;color:var(--sand)">
+            <i class="fa-solid fa-house"
+               style="font-size:0.7rem;margin-right:3px"></i>
+            <%= listing.title %>
+          </p>
+        </div>
+        <button class="preview-modal-close message-modal-close">
+          &times;
+        </button>
+      </div>
+
+      <!-- Host info -->
+      <div style="padding:0 2rem">
+        <div style="display:flex;align-items:center;gap:0.75rem;
+                    padding:1rem 0;
+                    border-bottom:1px solid var(--charcoal-20);
+                    margin-bottom:1rem">
+          <div style="width:40px;height:40px;border-radius:50%;
+                      background:var(--terra);display:flex;
+                      align-items:center;justify-content:center;
+                      color:white;font-family:var(--font-display);
+                      font-size:1.1rem;font-weight:500;flex-shrink:0">
+            <%= listing.owner.username.charAt(0).toUpperCase() %>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.9rem">
+              <%= listing.owner.username %>
+            </div>
+            <div style="font-size:0.75rem;color:var(--sand)">
+              Host
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form action="/conversations" method="POST">
+        <input type="hidden" name="_csrf"
+               value="<%= csrfToken %>" />
+        <input type="hidden" name="listingId"
+               value="<%= listing._id %>" />
+        <input type="hidden" name="recipientId"
+               value="<%= listing.owner._id %>" />
+
+        <div class="preview-modal-body" style="padding-top:0">
+          <textarea
+            name="initialMessage"
+            placeholder="Hi! I'm interested in this listing and had a question..."
+            rows="4"
+            maxlength="2000"
+            required
+            class="form-control"
+            style="resize:none;font-size:0.925rem"
+            id="message-host-textarea"
+          ></textarea>
+          <p style="font-size:0.72rem;color:var(--sand);
+                    text-align:right;margin-top:0.3rem"
+             id="message-fab-char-count">
+            0 / 2000
+          </p>
+        </div>
+
+        <div class="preview-modal-footer">
+          <button type="button"
+                  class="btn btn-outline message-modal-close">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-paper-plane"></i>
+            Send Message
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+<% } else if (!currUser) { %>
+
+  <!-- Not logged in — show login prompt FAB -->
+  <a href="/login"
+     style="position:fixed;bottom:2rem;right:2rem;
+            z-index:950;
+            display:flex;align-items:center;gap:0.5rem;
+            padding:0.75rem 1.25rem;
+            background:var(--charcoal);color:white;
+            border-radius:999px;text-decoration:none;
+            font-family:var(--font-body);font-size:0.875rem;
+            font-weight:600;pointer-events:all !important;
+            box-shadow:var(--shadow-lg);
+            transition:background var(--transition)">
+    <i class="fa-regular fa-message"></i>
+    Log in to Message
+  </a>
+
+<% } %>
+
 <% if(currUser) { %>
 <style>
   /* ─── Booking date picker ─────────────────────────────────────── */
@@ -558,8 +694,38 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   })();
+
+  // FAB message textarea char counter
+  var fabTextarea  = document.getElementById('message-host-textarea');
+  var fabCharCount = document.getElementById('message-fab-char-count');
+
+  if (fabTextarea && fabCharCount) {
+    fabTextarea.addEventListener('input', function () {
+      var len = fabTextarea.value.length;
+      fabCharCount.textContent = len + ' / 2000';
+      fabCharCount.style.color = len > 1800
+        ? '#c0392b' : 'var(--sand)';
+    });
+  }
+
+  // FAB click handler
+  var fab   = document.getElementById('message-host-fab');
+  var modal = document.getElementById('message-host-modal');
+  if (fab && modal) {
+    fab.addEventListener('click', function(e) {
+      e.stopPropagation();
+      modal.style.display = 'flex';
+    });
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) modal.style.display = 'none';
+    });
+    var closeBtns = modal.querySelectorAll('.message-modal-close');
+    closeBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        modal.style.display = 'none';
+      });
+    });
+  }
 });
 </script>
 <% } %>
-
-<script src="/js/map.js"></script>

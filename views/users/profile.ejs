@@ -30,6 +30,12 @@
     </div>
     <div class="profile-stat">
       <div class="profile-stat-value">
+        <%= unreadMessages %>
+      </div>
+      <div class="profile-stat-label">Unread</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat-value">
         <%= new Date(user._id.getTimestamp()).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' }) %>
       </div>
       <div class="profile-stat-label">Member Since</div>
@@ -43,6 +49,9 @@
     </a>
     <a href="/host/bookings" class="btn btn-outline btn-sm">
       <i class="fa-solid fa-house-chimney"></i> Host Dashboard
+    </a>
+    <a href="/conversations" class="btn btn-outline btn-sm">
+      <i class="fa-regular fa-message"></i> Messages
     </a>
   </div>
 

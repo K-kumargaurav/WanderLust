@@ -681,6 +681,7 @@ body {
   position: sticky;
   top: 84px;
   align-self: start;
+  isolation: auto;
 }
 
 .price-card {
@@ -1696,7 +1697,7 @@ textarea.form-control { resize: vertical; min-height: 110px; }
 /* ── Scroll to Top ───────────────────────── */
 .scroll-top-btn {
   position: fixed;
-  bottom: 2rem;
+  bottom: 5rem;
   right: 2rem;
   width: 44px;
   height: 44px;
@@ -1749,4 +1750,15 @@ textarea.form-control { resize: vertical; min-height: 110px; }
     transparent 2px,
     transparent 8px
   );
+}
+
+/* ── Message Host FAB — mobile ──────────── */
+@media (max-width: 480px) {
+  #message-host-fab {
+    left: 1rem !important;
+    right: auto !important;
+    bottom: 5rem !important;
+    padding: 0.65rem 1rem !important;
+    font-size: 0.8rem !important;
+  }
 }

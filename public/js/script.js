@@ -321,3 +321,34 @@ if (scrollTopBtn) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+// ─── Unread Message Count Polling ────────────────────────────────────────
+// Polls every 30 seconds to update the unread badge
+// Only runs when user is logged in (badge element exists)
+
+(function () {
+  const badge = document.querySelector('.unread-message-badge');
+  if (!badge) return; // not logged in
+
+  function pollUnreadCount() {
+    fetch('/conversations/unread-count', {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin',
+    })
+      .then((res) => res.json())
+      .then(({ unread }) => {
+        if (unread > 0) {
+          badge.textContent    = unread > 99 ? '99+' : unread;
+          badge.style.display  = 'flex';
+        } else {
+          badge.style.display  = 'none';
+        }
+      })
+      .catch(() => {
+        // Silently ignore polling errors
+      });
+  }
+
+  // Poll every 30 seconds
+  setInterval(pollUnreadCount, 30000);
+})();

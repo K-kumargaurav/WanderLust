@@ -240,6 +240,7 @@
             <th>Status</th>
             <th>Payment</th>
             <th>Booked On</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -274,6 +275,18 @@
                 <% } %>
               </td>
               <td class="host-table-booked"><%= fmtShort(b.createdAt) %></td>
+              <td>
+                <form action="/conversations" method="POST" style="display:inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="listingId" value="<%= b.listing._id %>" />
+                  <input type="hidden" name="recipientId" value="<%= b.guest._id %>" />
+                  <input type="hidden" name="bookingId" value="<%= b._id %>" />
+                  <input type="hidden" name="initialMessage" value="Hi! I wanted to reach out about your upcoming stay." />
+                  <button type="submit" class="btn btn-outline btn-sm">
+                    <i class="fa-regular fa-message"></i> Message Guest
+                  </button>
+                </form>
+              </td>
             </tr>
           <% } %>
         </tbody>
@@ -340,6 +353,17 @@
             <span class="host-card-label">Booked on</span>
             <span style="font-size:0.78rem;color:var(--charcoal-60)"><%= fmtShort(b.createdAt) %></span>
           </div>
+          <hr class="host-card-divider" />
+          <form action="/conversations" method="POST" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="listingId" value="<%= b.listing._id %>" />
+            <input type="hidden" name="recipientId" value="<%= b.guest._id %>" />
+            <input type="hidden" name="bookingId" value="<%= b._id %>" />
+            <input type="hidden" name="initialMessage" value="Hi! I wanted to reach out about your upcoming stay." />
+            <button type="submit" class="btn btn-outline btn-sm">
+              <i class="fa-regular fa-message"></i> Message Guest
+            </button>
+          </form>
         </div>
       <% } %>
     </div>

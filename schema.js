@@ -23,6 +23,19 @@ module.exports.reviewSchema = Joi.object({
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+module.exports.messageSchema = Joi.object({
+    body:  Joi.string().trim().min(1).max(2000).required(),
+    _csrf: Joi.string().optional(),
+});
+
+module.exports.conversationSchema = Joi.object({
+    listingId:      Joi.string().required(),
+    recipientId:    Joi.string().required(),
+    bookingId:      Joi.string().optional().allow('', null),
+    initialMessage: Joi.string().trim().min(1).max(2000).required(),
+    _csrf:          Joi.string().optional(),
+});
+
 module.exports.bookingSchema = Joi.object({
     booking: Joi.object({
         checkIn: Joi.date()

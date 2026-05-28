@@ -429,6 +429,64 @@ async function sendNewReviewNotificationToHost(hostEmail, review, listing, autho
     console.log(`[email] Sent: ${subject} → ${hostEmail}`);
 }
 
+// ─── 7. New Message Notification ────────────────────────────────────────────
+
+/**
+ * Notifies a user that they received a new message.
+ *
+ * @param {string} toEmail        - Recipient email
+ * @param {string} senderUsername - Who sent the message
+ * @param {string} messageBody    - The message content (truncated)
+ * @param {string} listingTitle   - Which listing this is about
+ * @param {string} conversationId - Link to the conversation
+ */
+async function sendNewMessageNotification(
+    toEmail, senderUsername, messageBody, listingTitle, conversationId
+) {
+    const subject = `New message from ${senderUsername} — ${listingTitle}`;
+
+    const preview = messageBody.length > 200
+        ? messageBody.substring(0, 200) + "..."
+        : messageBody;
+
+    const html = buildEmailHtml({
+        title: `New message from ${senderUsername}`,
+        body: `
+      <p>You have a new message about
+         <strong>${listingTitle}</strong>.</p>
+
+      <div style="background:#FAF7F2;border-left:3px solid #C0602A;
+                  border-radius:0 8px 8px 0;padding:16px 20px;
+                  margin:20px 0">
+        <p style="margin:0;color:#555;font-style:italic;
+                  font-size:15px;line-height:1.6">
+          "${preview}"
+        </p>
+        <p style="margin:8px 0 0;font-size:12px;color:#B8A99A">
+          — ${senderUsername}
+        </p>
+      </div>
+
+      <p style="color:#888;font-size:14px">
+        Reply to this message on WanderLust to keep
+        the conversation going.
+      </p>
+    `,
+        buttonText: "View Message",
+        buttonUrl: `${getBaseUrl()}/conversations/${conversationId}`,
+        footerNote: "You received this because someone messaged you on WanderLust.",
+    });
+
+    await transport.sendMail({
+        from: fromAddress,
+        to: toEmail,
+        subject,
+        html,
+    });
+
+    console.log(`[email] ✓ Sent "${subject}" → ${toEmail}`);
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -439,4 +497,5 @@ module.exports = {
     sendBookingCancelledToGuest,
     sendCancellationNotificationToHost,
     sendNewReviewNotificationToHost,
+    sendNewMessageNotification,
 };

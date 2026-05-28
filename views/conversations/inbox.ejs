@@ -1,0 +1,150 @@
+<% layout("/layouts/boilerplate") %>
+
+<div style="max-width:780px;margin:2rem auto;padding:0 2rem 4rem">
+
+  <!-- Header -->
+  <div style="margin-bottom:0.25rem">
+    <a href="/listings" style="font-size:0.8rem;color:var(--sand);
+       text-decoration:none;display:inline-flex;align-items:center;
+       gap:0.3rem">
+      <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i>
+      Back to listings
+    </a>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;
+              margin-bottom:2rem">
+    <div>
+      <h1 style="font-family:var(--font-display);font-size:2rem;
+                 font-weight:400;margin-bottom:0.25rem">
+        <i class="fa-regular fa-message"
+           style="color:var(--terra);margin-right:0.5rem;
+                  font-size:1.5rem"></i>
+        Messages
+      </h1>
+      <p style="color:var(--sand);font-size:0.875rem">
+        <%= conversations.length %> conversation<%=
+          conversations.length !== 1 ? 's' : '' %>
+        <% if (totalUnread > 0) { %>
+          · <strong style="color:var(--terra)">
+              <%= totalUnread %> unread
+            </strong>
+        <% } %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Conversation List -->
+  <% if (conversations.length === 0) { %>
+    <div style="text-align:center;padding:4rem 2rem;
+                color:var(--charcoal-60)">
+      <i class="fa-regular fa-message"
+         style="font-size:3rem;color:var(--charcoal-20);
+                display:block;margin-bottom:1rem"></i>
+      <p style="font-family:var(--font-display);font-size:1.5rem;
+                color:var(--charcoal);margin-bottom:0.5rem">
+        No messages yet
+      </p>
+      <p style="font-size:0.875rem">
+        Message a host from any listing page.
+      </p>
+      <a href="/listings" class="btn btn-primary"
+         style="margin-top:1.5rem;display:inline-flex">
+        Browse Listings
+      </a>
+    </div>
+
+  <% } else { %>
+    <div style="display:flex;flex-direction:column;gap:0.75rem">
+      <% for (const conv of conversations) { %>
+        <%
+          const other = conv.participants.find(
+            p => p._id.toString() !== currUser._id.toString()
+          );
+          const unread = conv.unreadCount.get(
+            currUser._id.toString()
+          ) || 0;
+          const thumb = conv.listing?.images?.[0]?.url || '';
+        %>
+
+        <a href="/conversations/<%= conv._id %>"
+           style="text-decoration:none;color:inherit">
+          <div style="display:flex;align-items:center;gap:1rem;
+                      padding:1.25rem;background:var(--white);
+                      border:1.5px solid <%= unread > 0
+                        ? 'var(--terra)' : 'var(--charcoal-20)' %>;
+                      border-radius:var(--radius-lg);
+                      transition:box-shadow var(--transition),
+                                 transform var(--transition)"
+               onmouseover="this.style.boxShadow='var(--shadow-md)';
+                            this.style.transform='translateY(-2px)'"
+               onmouseout="this.style.boxShadow='none';
+                           this.style.transform='translateY(0)'">
+
+            <!-- Listing thumbnail -->
+            <% if (thumb) { %>
+              <img src="<%= thumb %>" alt=""
+                   style="width:64px;height:64px;object-fit:cover;
+                          border-radius:var(--radius-md);flex-shrink:0"/>
+            <% } else { %>
+              <div style="width:64px;height:64px;background:var(--cream);
+                          border-radius:var(--radius-md);flex-shrink:0;
+                          display:flex;align-items:center;
+                          justify-content:center">
+                <i class="fa-solid fa-house"
+                   style="color:var(--sand)"></i>
+              </div>
+            <% } %>
+
+            <!-- Content -->
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;
+                          justify-content:space-between;
+                          margin-bottom:0.2rem">
+                <span style="font-weight:600;font-size:0.925rem">
+                  @<%= other?.username || 'Unknown' %>
+                </span>
+                <span style="font-size:0.75rem;color:var(--sand)">
+                  <%= new Date(conv.lastMessageAt)
+                    .toLocaleDateString('en-IN', {
+                      day:'numeric', month:'short'
+                    }) %>
+                </span>
+              </div>
+
+              <div style="font-size:0.8rem;color:var(--sand);
+                          margin-bottom:0.3rem;white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis">
+                <i class="fa-solid fa-house"
+                   style="font-size:0.7rem;margin-right:3px"></i>
+                <%= conv.listing?.title || 'Listing removed' %>
+              </div>
+
+              <div style="display:flex;align-items:center;
+                          justify-content:space-between">
+                <span style="font-size:0.85rem;
+                             color:<%= unread > 0
+                               ? 'var(--charcoal)'
+                               : 'var(--charcoal-60)' %>;
+                             font-weight:<%= unread > 0
+                               ? '600' : '400' %>;
+                             white-space:nowrap;overflow:hidden;
+                             text-overflow:ellipsis;max-width:400px">
+                  <%= conv.lastMessage || 'No messages yet' %>
+                </span>
+                <% if (unread > 0) { %>
+                  <span style="background:var(--terra);color:white;
+                               border-radius:999px;font-size:0.7rem;
+                               font-weight:700;padding:0.15rem 0.5rem;
+                               flex-shrink:0;margin-left:0.5rem">
+                    <%= unread %>
+                  </span>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </a>
+      <% } %>
+    </div>
+  <% } %>
+</div>

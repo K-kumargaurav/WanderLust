@@ -25,6 +25,20 @@
       <% } else { %>
         <a href="/listings/new" class="wl-nav-link">Add Listing</a>
         <a href="/wishlist" class="wl-nav-link" title="Wishlist"><i class="fa-regular fa-heart"></i></a>
+        <a href="/conversations" class="wl-nav-link" title="Messages" style="position:relative">
+          <i class="fa-regular fa-message"></i>
+          <span class="unread-message-badge"
+                style="position:absolute;top:-4px;right:-4px;
+                       background:var(--terra);color:white;
+                       border-radius:999px;font-size:0.6rem;
+                       font-weight:700;padding:0.1rem 0.35rem;
+                       min-width:16px;text-align:center;
+                       line-height:1.4;
+                       display:<%= unreadMessages > 0 ? 'flex' : 'none' %>;
+                       align-items:center;justify-content:center">
+            <%= unreadMessages > 0 ? unreadMessages : '' %>
+          </span>
+        </a>
         <a href="/bookings" class="wl-nav-link" title="My Bookings"><i class="fa-regular fa-calendar-check"></i></a>
         <a href="/profile" class="wl-nav-link" title="Profile"><i class="fa-regular fa-user"></i></a>
         <a href="/logout" class="wl-nav-btn outline">Log Out</a>

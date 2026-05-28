@@ -2,7 +2,7 @@ const crypto      = require("crypto");
 const Listing     = require("./models/listing");
 const Review      = require("./models/review");
 const AppError    = require("./utils/expressErr.js");
-const { listingSchema, reviewSchema, bookingSchema } = require("./schema.js");
+const { listingSchema, reviewSchema, bookingSchema, messageSchema, conversationSchema } = require("./schema.js");
 const { ALLOWED_IMAGE_MIMES } = require("./utils/constants");
 
 /**
@@ -227,6 +227,24 @@ module.exports.validateCsrf = (req, res, next) => {
  * @param   {import('express').NextFunction} next
  * @returns {void}
  */
+module.exports.validateMessage = (req, res, next) => {
+    const { error } = messageSchema.validate(req.body);
+    if (error) {
+        const errMsg = error.details.map((el) => el.message).join(", ");
+        return next(new AppError(400, errMsg));
+    }
+    next();
+};
+
+module.exports.validateConversation = (req, res, next) => {
+    const { error } = conversationSchema.validate(req.body);
+    if (error) {
+        const errMsg = error.details.map((el) => el.message).join(", ");
+        return next(new AppError(400, errMsg));
+    }
+    next();
+};
+
 module.exports.validateImageMime = (req, res, next) => {
     const files = req.files || (req.file ? [req.file] : []);
     for (const file of files) {
