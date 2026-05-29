@@ -3,7 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WanderLust — Find Your Perfect Stay</title>
+
+  <!-- Primary Meta Tags -->
+  <title><%= typeof seo !== 'undefined' && seo.title
+    ? seo.title + ' — WanderLust'
+    : 'WanderLust — Find Your Perfect Stay' %></title>
+
+  <meta name="description" content="<%= typeof seo !== 'undefined'
+    && seo.description ? seo.description
+    : 'Discover unique stays around the world. From cozy rooms to mountaintop retreats.' %>"/>
+
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="<%= typeof seo !== 'undefined'
+    && seo.canonical ? seo.canonical : '' %>" />
+
+  <!-- Open Graph (WhatsApp, Facebook, LinkedIn previews) -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:site_name"   content="WanderLust" />
+  <meta property="og:title"       content="<%= typeof seo !== 'undefined'
+    && seo.title ? seo.title : 'WanderLust — Find Your Perfect Stay' %>" />
+  <meta property="og:description" content="<%= typeof seo !== 'undefined'
+    && seo.description ? seo.description
+    : 'Discover unique stays around the world.' %>" />
+  <meta property="og:image"       content="<%= typeof seo !== 'undefined'
+    && seo.image ? seo.image
+    : 'https://res.cloudinary.com/' + process.env.CLOUD_NAME
+      + '/image/upload/wanderlust-og-default.jpg' %>" />
+  <meta property="og:url"         content="<%= typeof seo !== 'undefined'
+    && seo.canonical ? seo.canonical : '' %>" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="<%= typeof seo !== 'undefined'
+    && seo.title ? seo.title
+    : 'WanderLust — Find Your Perfect Stay' %>" />
+  <meta name="twitter:description" content="<%= typeof seo !== 'undefined'
+    && seo.description ? seo.description
+    : 'Discover unique stays around the world.' %>" />
+  <meta name="twitter:image"       content="<%= typeof seo !== 'undefined'
+    && seo.image ? seo.image : '' %>" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" />
 
   <!-- Mapbox -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v3.17.0/mapbox-gl.css" rel="stylesheet" />

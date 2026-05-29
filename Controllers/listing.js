@@ -58,6 +58,14 @@ module.exports.index = async (req, res) => {
         .skip((safePage - 1) * ITEMS_PER_PAGE)
         .limit(ITEMS_PER_PAGE);
 
+    const seo = {
+        title:       searchQuery
+                       ? `Search: ${searchQuery}`
+                       : 'Explore Stays',
+        description: 'Browse hundreds of unique listings across India and the world.',
+        canonical:   `${req.protocol}://${req.get('host')}/listings`,
+    };
+
     res.render("listings/index.ejs", {
         allListings,
         FILTERS: LISTING_FILTERS,
@@ -67,6 +75,7 @@ module.exports.index = async (req, res) => {
         currentPage: safePage,
         totalPages,
         totalListings,
+        seo,
     });
 };
 
@@ -128,7 +137,15 @@ module.exports.showListing = async (req, res) => {
         }
     }
 
-    res.render("listings/show.ejs", { listing });
+    const canonical = `${req.protocol}://${req.get('host')}/listings/${listing._id}`;
+    const seo = {
+        title:       listing.title,
+        description: listing.description.substring(0, 160).trim(),
+        image:       listing.images?.[0]?.url || '',
+        canonical,
+    };
+
+    res.render("listings/show.ejs", { listing, seo });
 };
 
 /**

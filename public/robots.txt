@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /profile
+Disallow: /bookings
+Disallow: /conversations
+Disallow: /wishlist
+
+Sitemap: https://wanderlust-0h7o.onrender.com/sitemap.xml

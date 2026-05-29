@@ -356,6 +356,27 @@
 
 <script src="/js/map.js"></script>
 
+<% if (typeof seo !== 'undefined') { %>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LodgingBusiness",
+  "name": "<%= listing.title.replace(/"/g, '\\"') %>",
+  "description": "<%= listing.description.substring(0,200).replace(/"/g, '\\"') %>",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "<%= listing.location %>",
+    "addressCountry": "<%= listing.country %>"
+  },
+  "priceRange": "₹<%= listing.price.toLocaleString('en-IN') %> per night",
+  <% if (listing.images && listing.images.length > 0) { %>
+  "image": "<%= listing.images[0].url %>",
+  <% } %>
+  "url": "<%= seo.canonical %>"
+}
+</script>
+<% } %>
+
 <% if (currUser && listing.owner &&
        !currUser._id.equals(listing.owner._id)) { %>
 
