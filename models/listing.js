@@ -77,6 +77,21 @@ const listingSchema = new Schema({
         default: 0,
         min: 0,
     },
+
+    // ─── Soft Delete Fields ────────────────────────────────────────
+    deleted: {
+        type: Boolean,
+        default: false,
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+    },
+    deletedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+    },
 });
 
 // ─── Indexes ─────────────────────────────────────────────────────────────────
@@ -86,6 +101,7 @@ listingSchema.index({ createdAt: -1 });
 listingSchema.index({ category: 1 });
 listingSchema.index({ price: 1 });
 listingSchema.index({ viewCount: -1 });
+listingSchema.index({ deleted: 1 });
 
 // Virtual: backward-compat getter for single image access
 listingSchema.virtual("image").get(function () {

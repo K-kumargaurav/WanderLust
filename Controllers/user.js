@@ -164,7 +164,10 @@ module.exports.logout = (req, res, next) => {
  */
 module.exports.renderProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
-    const myListings = await Listing.find({ owner: req.user._id }).sort({ createdAt: -1 });
+    const myListings = await Listing.find({
+        owner: req.user._id,
+        deleted: { $ne: true },
+    }).sort({ createdAt: -1 });
 
     const myBookings = await Booking.find({ guest: req.user._id, status: "confirmed" });
 
@@ -398,6 +401,9 @@ module.exports.toggleWishlist = async (req, res) => {
  * @returns {Promise<void>}
  */
 module.exports.renderWishlist = async (req, res) => {
-    const user = await User.findById(req.user._id).populate("wishlist");
-    res.render("users/wishlist.ejs", { wishlistListings: user.wishlist });
+    const user = await User.findById(req.user._id).populate({
+        path: "wishlist",
+        match: { deleted: { $ne: true } },
+    });
+    res.render("users/wishlist.ejs", { wishlistListings: user.wishlist.filter(Boolean) });
 };

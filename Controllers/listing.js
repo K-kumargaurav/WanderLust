@@ -39,9 +39,12 @@ module.exports.index = async (req, res) => {
     } else {
         const activeFilter = LISTING_FILTERS.find((f) => f.slug === currentFilter);
         if (activeFilter) {
-            dbQuery = activeFilter.query;
+            dbQuery = { ...activeFilter.query };
         }
     }
+
+    // Exclude soft-deleted listings
+    dbQuery.deleted = { $ne: true };
 
     // Sort
     sortOption = SORT_OPTIONS[sortBy] || SORT_OPTIONS[DEFAULT_SORT];
@@ -102,8 +105,12 @@ module.exports.showListing = async (req, res) => {
         req.flash("error", "Invalid listing ID.");
         return res.redirect("/listings");
     }
-    const listing = await Listing.findById(id)
-        .populate({ path: "reviews", populate: "author" })
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } })
+        .populate({
+            path: "reviews",
+            match: { deleted: { $ne: true } },
+            populate: "author",
+        })
         .populate("owner");
 
     if (!listing) {
@@ -186,7 +193,7 @@ module.exports.renderEditForm = async (req, res) => {
         req.flash("error", "Invalid listing ID.");
         return res.redirect("/listings");
     }
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } });
 
     if (!listing) {
         req.flash("error", "Listing does not exist!");
@@ -217,7 +224,7 @@ module.exports.updateListing = async (req, res) => {
         return res.redirect("/listings");
     }
 
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } });
     if (!listing) {
         req.flash("error", "Listing does not exist!");
         return res.redirect("/listings");
@@ -306,7 +313,7 @@ module.exports.destroyListing = async (req, res) => {
         req.flash("error", "Invalid listing ID.");
         return res.redirect("/listings");
     }
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } });
 
     if (listing) {
         // Clean up all images from Cloudinary

@@ -245,6 +245,27 @@ module.exports.validateConversation = (req, res, next) => {
     next();
 };
 
+/**
+ * Checks if the logged-in user has admin role.
+ * Must be used AFTER isLoggedIn.
+ */
+module.exports.isAdmin = (req, res, next) => {
+    if (!req.user || req.user.role !== 'admin') {
+        req.flash('error', 'You do not have admin access.');
+        return res.redirect('/listings');
+    }
+    next();
+};
+
+/**
+ * Adds isAdmin boolean to res.locals for all views.
+ * Allows navbar/views to show admin link conditionally.
+ */
+module.exports.setAdminLocal = (req, res, next) => {
+    res.locals.isAdmin = req.user?.role === 'admin';
+    next();
+};
+
 module.exports.validateImageMime = (req, res, next) => {
     const files = req.files || (req.file ? [req.file] : []);
     for (const file of files) {

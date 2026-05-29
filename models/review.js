@@ -20,8 +20,24 @@ const reviewSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "User",
     },
+
+    // ─── Soft Delete Fields ────────────────────────────────────────
+    deleted: {
+        type: Boolean,
+        default: false,
+    },
+    deletedAt: {
+        type: Date,
+        default: null,
+    },
+    deletedBy: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: null,
+    },
 });
 
 reviewSchema.index({ author: 1 });
+reviewSchema.index({ deleted: 1 });
 
 module.exports = mongoose.model("Review", reviewSchema);

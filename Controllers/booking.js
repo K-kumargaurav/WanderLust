@@ -30,7 +30,7 @@ const ONE_DAY_MS = 1000 * 60 * 60 * 24;
  */
 module.exports.createBooking = async (req, res) => {
     const { id } = req.params;
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } });
     if (!listing) {
         req.flash("error", "Listing does not exist!");
         return req.session.save(() => res.redirect("/listings"));
@@ -143,7 +143,10 @@ module.exports.renderMyBookings = async (req, res) => {
  * @returns {Promise<void>}
  */
 module.exports.renderHostBookings = async (req, res) => {
-    const ownedListings = await Listing.find({ owner: req.user._id }).select("_id");
+    const ownedListings = await Listing.find({
+        owner: req.user._id,
+        deleted: { $ne: true },
+    }).select("_id");
     const listingIds = ownedListings.map((l) => l._id);
 
     const bookings = await Booking.find({

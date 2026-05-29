@@ -1,0 +1,228 @@
+<% layout("/layouts/boilerplate") %>
+
+<%
+  const shortOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtShort(d) {
+    return d ? new Date(d).toLocaleDateString('en-IN', shortOpts) : '';
+  }
+  function nightsBetween(checkIn, checkOut) {
+    if (!checkIn || !checkOut) return 0;
+    const ms = new Date(checkOut) - new Date(checkIn);
+    return Math.max(1, Math.round(ms / (1000 * 60 * 60 * 24)));
+  }
+%>
+
+<style>
+  .admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+  .admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .admin-back:hover { color: var(--terra); }
+  .admin-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+  .admin-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-filter-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-table-wrap {
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--white);
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 1000px;
+  }
+  .admin-table thead { background: var(--ivory-dark); }
+  .admin-table th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+  .admin-table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--charcoal-20);
+    color: var(--charcoal);
+    vertical-align: middle;
+  }
+  .admin-table tbody tr:hover { background: var(--ivory); }
+
+  .admin-guest-sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--charcoal-60);
+  }
+  .admin-listing-sub {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--sand);
+  }
+
+  .admin-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .admin-badge--confirmed { background: #e6f4ea; color: #1a7f37; }
+  .admin-badge--cancelled { background: #fde8e8; color: #c33; }
+  .admin-badge--pending   { background: #fff4e5; color: #b35c00; }
+
+  .admin-pay--paid     { background: #e6f4ea; color: #1a7f37; }
+  .admin-pay--unpaid   { background: #fff4e5; color: #b35c00; }
+  .admin-pay--refunded { background: #fde8e8; color: #c33; }
+
+  .admin-pagination {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .admin-pagination a,
+  .admin-pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .admin-pagination a:hover { background: var(--ivory); }
+  .admin-pagination .current {
+    background: var(--charcoal);
+    color: var(--white);
+    border-color: var(--charcoal);
+  }
+</style>
+
+<div class="admin-page">
+
+  <a href="/admin" class="admin-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+  </a>
+  <h1 class="admin-title">Bookings</h1>
+  <p class="admin-subtitle">
+    <%= total.toLocaleString('en-IN') %> booking<%= total !== 1 ? 's' : '' %>
+    <% if (statusFilter) { %> · filtered by <strong><%= statusFilter %></strong><% } %>
+  </p>
+
+  <div class="admin-filter-row">
+    <a href="/admin/bookings" class="btn btn-sm <%= !statusFilter ? 'btn-dark' : 'btn-outline' %>">All</a>
+    <a href="/admin/bookings?status=confirmed" class="btn btn-sm <%= statusFilter === 'confirmed' ? 'btn-dark' : 'btn-outline' %>">Confirmed</a>
+    <a href="/admin/bookings?status=cancelled" class="btn btn-sm <%= statusFilter === 'cancelled' ? 'btn-dark' : 'btn-outline' %>">Cancelled</a>
+  </div>
+
+  <% if (bookings.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-regular fa-calendar-xmark"></i>
+      <h2>No bookings found</h2>
+      <p>Try a different filter.</p>
+    </div>
+  <% } else { %>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Guest</th>
+            <th>Listing</th>
+            <th>Check-in</th>
+            <th>Nights</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Booked On</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const b of bookings) { %>
+            <tr>
+              <td>
+                <strong>@<%= b.guest?.username || 'unknown' %></strong>
+                <span class="admin-guest-sub"><%= b.guest?.email || '' %></span>
+              </td>
+              <td>
+                <%= b.listing?.title || '(deleted)' %>
+                <% if (b.listing?.location) { %>
+                  <span class="admin-listing-sub"><%= b.listing.location %></span>
+                <% } %>
+              </td>
+              <td style="white-space:nowrap"><%= fmtShort(b.checkIn) %></td>
+              <td><%= b.nights ?? nightsBetween(b.checkIn, b.checkOut) %></td>
+              <td style="font-weight:600;white-space:nowrap">
+                &#8377;<%= (b.totalPrice ?? 0).toLocaleString('en-IN') %>
+              </td>
+              <td>
+                <span class="admin-badge admin-badge--<%= b.status %>"><%= b.status %></span>
+              </td>
+              <td>
+                <% if (b.paymentStatus === 'paid') { %>
+                  <span class="admin-badge admin-pay--paid">&#x1F4B3; Paid</span>
+                <% } else if (b.paymentStatus === 'refunded') { %>
+                  <span class="admin-badge admin-pay--refunded">&#x21A9;&#xFE0F; Refunded</span>
+                <% } else { %>
+                  <span class="admin-badge admin-pay--unpaid">&#x23F3; Unpaid</span>
+                <% } %>
+              </td>
+              <td style="white-space:nowrap;font-size:0.78rem;color:var(--charcoal-60)">
+                <%= fmtShort(b.createdAt) %>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="admin-pagination">
+        <% for (let p = 1; p <= totalPages; p++) { %>
+          <% if (p === page) { %>
+            <span class="current"><%= p %></span>
+          <% } else { %>
+            <a href="?page=<%= p %><%= statusFilter ? '&status=' + encodeURIComponent(statusFilter) : '' %>"><%= p %></a>
+          <% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>

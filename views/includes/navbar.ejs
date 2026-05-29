@@ -41,6 +41,13 @@
         </a>
         <a href="/bookings" class="wl-nav-link" title="My Bookings"><i class="fa-regular fa-calendar-check"></i></a>
         <a href="/profile" class="wl-nav-link" title="Profile"><i class="fa-regular fa-user"></i></a>
+        <% if (isAdmin) { %>
+          <a href="/admin" class="wl-nav-link"
+             style="color:var(--terra);font-weight:600"
+             title="Admin Dashboard">
+            <i class="fa-solid fa-shield-halved"></i>
+          </a>
+        <% } %>
         <a href="/logout" class="wl-nav-btn outline">Log Out</a>
       <% } %>
     </div>

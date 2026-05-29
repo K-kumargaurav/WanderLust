@@ -1,0 +1,324 @@
+<% layout("/layouts/boilerplate") %>
+
+<%
+  const shortOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtShort(d) {
+    return new Date(d).toLocaleDateString('en-IN', shortOpts);
+  }
+%>
+
+<style>
+  .admin-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+  .admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .admin-back:hover { color: var(--terra); }
+  .admin-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+  .admin-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-review-card {
+    background: var(--white);
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.85rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.85rem 1rem;
+    align-items: flex-start;
+  }
+
+  .admin-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: var(--charcoal-20);
+    color: var(--charcoal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  .admin-review-body {
+    min-width: 0;
+  }
+  .admin-review-author {
+    font-weight: 600;
+    color: var(--charcoal);
+    font-size: 0.9rem;
+  }
+  .admin-review-author small {
+    font-weight: 400;
+    color: var(--charcoal-60);
+    margin-left: 0.4rem;
+  }
+  .admin-review-stars {
+    color: var(--terra);
+    margin: 0.25rem 0;
+    font-size: 0.85rem;
+  }
+  .admin-review-comment {
+    font-style: italic;
+    color: var(--charcoal);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin: 0.35rem 0;
+  }
+  .admin-review-listing {
+    font-size: 0.78rem;
+    color: var(--terra);
+    text-decoration: none;
+  }
+  .admin-review-listing:hover { text-decoration: underline; }
+
+  .admin-review-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.6rem;
+    min-width: 90px;
+  }
+  .admin-review-date {
+    font-size: 0.75rem;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 640px) {
+    .admin-review-card {
+      grid-template-columns: auto 1fr;
+    }
+    .admin-review-right {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--charcoal-20);
+      padding-top: 0.6rem;
+      width: 100%;
+    }
+  }
+
+  .admin-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1.5px solid var(--charcoal-20);
+  }
+  .admin-tab {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    color: var(--charcoal-60);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px;
+    font-weight: 500;
+  }
+  .admin-tab:hover { color: var(--charcoal); }
+  .admin-tab.active {
+    color: var(--charcoal);
+    border-bottom-color: var(--terra);
+  }
+  .admin-tab-count {
+    background: var(--ivory-dark);
+    color: var(--charcoal-60);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    margin-left: 0.35rem;
+    font-weight: 600;
+  }
+  .admin-tab.active .admin-tab-count {
+    background: var(--terra-pale);
+    color: var(--terra);
+  }
+  .admin-deleted-meta {
+    font-size: 0.7rem;
+    color: var(--charcoal-60);
+    margin-top: 0.25rem;
+  }
+
+  .admin-pagination {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .admin-pagination a,
+  .admin-pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .admin-pagination a:hover { background: var(--ivory); }
+  .admin-pagination .current {
+    background: var(--charcoal);
+    color: var(--white);
+    border-color: var(--charcoal);
+  }
+</style>
+
+<div class="admin-page">
+
+  <a href="/admin" class="admin-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+  </a>
+  <h1 class="admin-title">Reviews</h1>
+  <p class="admin-subtitle">
+    <%= total.toLocaleString('en-IN') %> <%= showDeleted ? 'hidden' : 'active' %>
+    review<%= total !== 1 ? 's' : '' %>
+  </p>
+
+  <div class="admin-tabs" role="tablist">
+    <a
+      href="/admin/reviews"
+      class="admin-tab <%= !showDeleted ? 'active' : '' %>"
+      role="tab"
+      aria-selected="<%= !showDeleted %>"
+    >
+      Active
+      <span class="admin-tab-count"><%= activeCount.toLocaleString('en-IN') %></span>
+    </a>
+    <a
+      href="/admin/reviews?deleted=true"
+      class="admin-tab <%= showDeleted ? 'active' : '' %>"
+      role="tab"
+      aria-selected="<%= showDeleted %>"
+    >
+      Deleted
+      <span class="admin-tab-count"><%= deletedCount.toLocaleString('en-IN') %></span>
+    </a>
+  </div>
+
+  <% if (reviews.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-regular fa-star"></i>
+      <h2>No reviews yet</h2>
+      <p>Reviews left by guests will appear here.</p>
+    </div>
+  <% } else { %>
+
+    <% for (const r of reviews) { %>
+      <div class="admin-review-card">
+        <div class="admin-avatar">
+          <%= (r.author?.username || '?').charAt(0) %>
+        </div>
+
+        <div class="admin-review-body">
+          <div class="admin-review-author">
+            @<%= r.author?.username || 'unknown' %>
+            <small><%= r.author?.email || '' %></small>
+          </div>
+
+          <div class="admin-review-stars">
+            <% for (let i = 1; i <= 5; i++) { %>
+              <i class="<%= i <= (r.rating ?? 0) ? 'fas' : 'far' %> fa-star"></i>
+            <% } %>
+          </div>
+
+          <p class="admin-review-comment">
+            &ldquo;<%= r.comment %>&rdquo;
+          </p>
+
+          <% if (r.listing && r.listing._id) { %>
+            <a href="/listings/<%= r.listing._id %>" class="admin-review-listing">
+              on &ldquo;<%= r.listing.title %>&rdquo;
+            </a>
+          <% } else { %>
+            <span style="font-size:0.78rem;color:var(--charcoal-60)">(listing deleted)</span>
+          <% } %>
+        </div>
+
+        <div class="admin-review-right">
+          <div class="admin-review-date">
+            <%= r.createdAt ? fmtShort(r.createdAt) : '' %>
+          </div>
+          <% if (showDeleted) { %>
+            <form
+              id="restore-review-form-<%= r._id %>"
+              action="/admin/reviews/<%= r._id %>/restore?_method=PUT"
+              method="POST"
+              style="display:inline"
+            >
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button
+                type="button"
+                class="btn btn-outline btn-sm admin-restore-review-btn"
+                data-form-id="restore-review-form-<%= r._id %>"
+              >
+                <i class="fa-solid fa-rotate-left"></i> Restore
+              </button>
+            </form>
+          <% } else { %>
+            <form
+              id="hide-review-form-<%= r._id %>"
+              action="/admin/reviews/<%= r._id %>?_method=DELETE"
+              method="POST"
+              style="display:inline"
+            >
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button
+                type="button"
+                class="btn btn-danger btn-sm admin-hide-review-btn"
+                data-form-id="hide-review-form-<%= r._id %>"
+              >
+                <i class="fa-solid fa-eye-slash"></i> Hide
+              </button>
+            </form>
+          <% } %>
+          <% if (r.deleted && r.deletedAt) { %>
+            <div class="admin-deleted-meta">
+              Hidden
+              <% if (r.deletedBy?.username) { %>
+                by @<%= r.deletedBy.username %>
+              <% } %>
+              on <%= fmtShort(r.deletedAt) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (totalPages > 1) { %>
+      <div class="admin-pagination">
+        <% for (let p = 1; p <= totalPages; p++) { %>
+          <% if (p === page) { %>
+            <span class="current"><%= p %></span>
+          <% } else { %>
+            <a href="?page=<%= p %><%= showDeleted ? '&deleted=true' : '' %>"><%= p %></a>
+          <% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>

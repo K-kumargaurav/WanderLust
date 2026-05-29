@@ -1,0 +1,368 @@
+<% layout("/layouts/boilerplate") %>
+
+<style>
+  .admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+  .admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .admin-back:hover { color: var(--terra); }
+  .admin-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+  .admin-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 1.5rem;
+  }
+  .admin-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .admin-search {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    max-width: 380px;
+  }
+  .admin-search .form-control { flex: 1; }
+
+  .admin-table-wrap {
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--white);
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 900px;
+  }
+  .admin-table thead { background: var(--ivory-dark); }
+  .admin-table th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+  .admin-table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--charcoal-20);
+    color: var(--charcoal);
+    vertical-align: middle;
+  }
+  .admin-table tbody tr:hover { background: var(--ivory); }
+
+  .admin-listing-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 220px;
+  }
+  .admin-thumb {
+    width: 56px;
+    height: 42px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    background: var(--ivory-dark);
+    flex-shrink: 0;
+  }
+  .admin-listing-title {
+    color: var(--charcoal);
+    text-decoration: none;
+    font-weight: 500;
+    display: block;
+    line-height: 1.2;
+  }
+  .admin-listing-title:hover { color: var(--terra); }
+  .admin-listing-cat {
+    font-size: 0.7rem;
+    color: var(--sand);
+    margin-top: 0.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .admin-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--terra);
+    background: var(--terra-pale);
+    border: 1px solid var(--terra-pale);
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .admin-icon-btn:hover { background: #F0D5C8; }
+
+  .admin-tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 1.5px solid var(--charcoal-20);
+  }
+  .admin-tab {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    color: var(--charcoal-60);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px;
+    font-weight: 500;
+  }
+  .admin-tab:hover { color: var(--charcoal); }
+  .admin-tab.active {
+    color: var(--charcoal);
+    border-bottom-color: var(--terra);
+  }
+  .admin-tab-count {
+    background: var(--ivory-dark);
+    color: var(--charcoal-60);
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    margin-left: 0.35rem;
+    font-weight: 600;
+  }
+  .admin-tab.active .admin-tab-count {
+    background: var(--terra-pale);
+    color: var(--terra);
+  }
+  .admin-deleted-meta {
+    font-size: 0.7rem;
+    color: var(--charcoal-60);
+    margin-top: 0.15rem;
+  }
+
+  .admin-pagination {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .admin-pagination a,
+  .admin-pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .admin-pagination a:hover { background: var(--ivory); }
+  .admin-pagination .current {
+    background: var(--charcoal);
+    color: var(--white);
+    border-color: var(--charcoal);
+  }
+</style>
+
+<div class="admin-page">
+
+  <a href="/admin" class="admin-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+  </a>
+  <h1 class="admin-title">Listings</h1>
+  <p class="admin-subtitle">
+    <%= total.toLocaleString('en-IN') %> <%= showDeleted ? 'hidden' : 'active' %>
+    listing<%= total !== 1 ? 's' : '' %>
+  </p>
+
+  <%
+    const qSuffix = search ? '&q=' + encodeURIComponent(search) : '';
+  %>
+  <div class="admin-tabs" role="tablist">
+    <a
+      href="/admin/listings?<%= qSuffix.slice(1) %>"
+      class="admin-tab <%= !showDeleted ? 'active' : '' %>"
+      role="tab"
+      aria-selected="<%= !showDeleted %>"
+    >
+      Active
+      <span class="admin-tab-count"><%= activeCount.toLocaleString('en-IN') %></span>
+    </a>
+    <a
+      href="/admin/listings?deleted=true<%= qSuffix %>"
+      class="admin-tab <%= showDeleted ? 'active' : '' %>"
+      role="tab"
+      aria-selected="<%= showDeleted %>"
+    >
+      Deleted
+      <span class="admin-tab-count"><%= deletedCount.toLocaleString('en-IN') %></span>
+    </a>
+  </div>
+
+  <div class="admin-toolbar">
+    <form action="/admin/listings" method="GET" class="admin-search" role="search">
+      <% if (showDeleted) { %>
+        <input type="hidden" name="deleted" value="true" />
+      <% } %>
+      <input
+        type="search"
+        name="q"
+        value="<%= search %>"
+        placeholder="Search by title, location, or country…"
+        class="form-control"
+      />
+      <button type="submit" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+    </form>
+  </div>
+
+  <% if (listings.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-solid fa-house-circle-xmark"></i>
+      <h2>No listings found</h2>
+      <p>Try a different search term.</p>
+    </div>
+  <% } else { %>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Listing</th>
+            <th>Owner</th>
+            <th>Location</th>
+            <th>Price</th>
+            <th>Views</th>
+            <th>Bookings</th>
+            <th style="min-width:130px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const l of listings) { %>
+            <tr>
+              <td>
+                <div class="admin-listing-cell">
+                  <img
+                    src="<%= l.images?.[0]?.url || '' %>"
+                    alt=""
+                    class="admin-thumb"
+                    onerror="this.style.display='none'"
+                  />
+                  <div>
+                    <a href="/listings/<%= l._id %>" class="admin-listing-title">
+                      <%= l.title %>
+                    </a>
+                    <% if (l.category) { %>
+                      <div class="admin-listing-cat"><%= l.category %></div>
+                    <% } %>
+                  </div>
+                </div>
+              </td>
+              <td>@<%= l.owner?.username || 'unknown' %></td>
+              <td style="color:var(--charcoal-60)">
+                <%= l.location %><% if (l.country) { %>, <%= l.country %><% } %>
+              </td>
+              <td style="font-weight:600;white-space:nowrap">
+                &#8377;<%= (l.price ?? 0).toLocaleString('en-IN') %>
+              </td>
+              <td><%= (l.views ?? 0).toLocaleString('en-IN') %></td>
+              <td><%= l.bookingCount %></td>
+              <td>
+                <div class="admin-actions">
+                  <a href="/listings/<%= l._id %>/analytics" class="admin-icon-btn" title="Analytics">
+                    <i class="fa-solid fa-chart-simple"></i>
+                  </a>
+                  <% if (showDeleted) { %>
+                    <form
+                      id="restore-listing-form-<%= l._id %>"
+                      action="/admin/listings/<%= l._id %>/restore?_method=PUT"
+                      method="POST"
+                      style="display:inline"
+                    >
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button
+                        type="button"
+                        class="btn btn-outline btn-sm admin-restore-listing-btn"
+                        data-form-id="restore-listing-form-<%= l._id %>"
+                        data-title="<%= l.title %>"
+                        title="Restore"
+                      >
+                        <i class="fa-solid fa-rotate-left"></i> Restore
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <form
+                      id="hide-listing-form-<%= l._id %>"
+                      action="/admin/listings/<%= l._id %>?_method=DELETE"
+                      method="POST"
+                      style="display:inline"
+                    >
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm admin-hide-listing-btn"
+                        data-form-id="hide-listing-form-<%= l._id %>"
+                        data-title="<%= l.title %>"
+                        title="Hide"
+                      >
+                        <i class="fa-solid fa-eye-slash"></i> Hide
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+                <% if (l.deleted && l.deletedAt) { %>
+                  <div class="admin-deleted-meta">
+                    Hidden
+                    <% if (l.deletedBy?.username) { %>
+                      by @<%= l.deletedBy.username %>
+                    <% } %>
+                    on <%= new Date(l.deletedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                  </div>
+                <% } %>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="admin-pagination">
+        <% for (let p = 1; p <= totalPages; p++) { %>
+          <% if (p === page) { %>
+            <span class="current"><%= p %></span>
+          <% } else { %>
+            <a href="?page=<%= p %><%= showDeleted ? '&deleted=true' : '' %><%= search ? '&q=' + encodeURIComponent(search) : '' %>"><%= p %></a>
+          <% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>

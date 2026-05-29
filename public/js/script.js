@@ -283,6 +283,169 @@ function showConfirmModal(title, body, confirmText = 'Confirm',
   });
 }
 
+// ─── Double Confirmation Modal ───────────────────────────────────────────
+// Reuses the same #confirm-modal as showConfirmModal but requires the
+// user to type an exact phrase before the confirm button enables.
+function showDoubleConfirmModal(title, body, confirmPhrase, actionLabel) {
+  return new Promise((resolve) => {
+    const modal      = document.getElementById('confirm-modal');
+    const titleEl    = document.getElementById('confirm-modal-title');
+    const bodyEl     = document.getElementById('confirm-modal-body');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn  = document.getElementById('confirm-modal-cancel');
+    const closeBtn   = document.getElementById('confirm-modal-close');
+
+    const inputId = 'confirm-modal-phrase-input';
+
+    titleEl.textContent = title;
+    bodyEl.innerHTML =
+      body +
+      `<div style="margin-top:1rem">
+         <label for="${inputId}" style="display:block;font-size:0.8rem;
+           color:var(--charcoal);margin-bottom:0.35rem">
+           Type <strong>${confirmPhrase}</strong> to confirm:
+         </label>
+         <input
+           type="text"
+           id="${inputId}"
+           autocomplete="off"
+           class="form-control"
+           style="font-family:monospace"
+         />
+       </div>`;
+
+    confirmBtn.textContent = actionLabel;
+    confirmBtn.className   = 'btn btn-danger';
+    confirmBtn.disabled    = true;
+    confirmBtn.style.opacity = '0.6';
+    confirmBtn.style.cursor  = 'not-allowed';
+
+    modal.style.display = 'flex';
+
+    const phraseInput = document.getElementById(inputId);
+    phraseInput.focus();
+
+    phraseInput.addEventListener('input', () => {
+      const match = phraseInput.value === confirmPhrase;
+      confirmBtn.disabled = !match;
+      confirmBtn.style.opacity = match ? '1' : '0.6';
+      confirmBtn.style.cursor  = match ? 'pointer' : 'not-allowed';
+    });
+
+    function cleanup(result) {
+      modal.style.display = 'none';
+      // Reset confirm button state
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = '1';
+      confirmBtn.style.cursor  = 'pointer';
+      // Replace nodes to drop listeners
+      confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+      cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+      resolve(result);
+    }
+
+    document.getElementById('confirm-modal-confirm')
+      .addEventListener('click', () => {
+        if (phraseInput.value === confirmPhrase) cleanup(true);
+      }, { once: true });
+    document.getElementById('confirm-modal-cancel')
+      .addEventListener('click', () => cleanup(false), { once: true });
+    closeBtn.addEventListener('click', () => cleanup(false), { once: true });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) cleanup(false);
+    }, { once: true });
+  });
+}
+
+// ─── Admin: Double-Confirm Destructive Actions ───────────────────────────
+function submitFormById(formId) {
+  const form = document.getElementById(formId);
+  if (form) form.submit();
+}
+
+document.querySelectorAll('.admin-hide-listing-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId, title } = btn.dataset;
+    const confirmed = await showDoubleConfirmModal(
+      'Hide this listing?',
+      `<strong>${title || 'Untitled'}</strong> will be hidden from the
+       public site. Bookings and reviews remain in the database and
+       it can be restored from the Deleted tab.`,
+      'HIDE',
+      'Yes, Hide Listing'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
+document.querySelectorAll('.admin-hide-review-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId } = btn.dataset;
+    const confirmed = await showDoubleConfirmModal(
+      'Hide this review?',
+      `The review will be hidden from the listing page. It remains in
+       the database and can be restored from the Deleted tab.`,
+      'HIDE',
+      'Yes, Hide Review'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
+document.querySelectorAll('.admin-ban-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId, username } = btn.dataset;
+    const confirmed = await showDoubleConfirmModal(
+      `Ban @${username}?`,
+      `@<strong>${username}</strong> will be prevented from logging in.
+       Their listings, reviews, and bookings will remain.`,
+      username,
+      'Yes, Ban User'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
+document.querySelectorAll('.admin-unban-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId, username } = btn.dataset;
+    const confirmed = await showConfirmModal(
+      `Unban @${username}?`,
+      `@<strong>${username}</strong> will be able to log in again.`,
+      'Yes, Unban',
+      'btn-primary'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
+document.querySelectorAll('.admin-restore-listing-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId, title } = btn.dataset;
+    const confirmed = await showConfirmModal(
+      'Restore this listing?',
+      `<strong>${title || 'Untitled'}</strong> will be visible to the
+       public again.`,
+      'Yes, Restore',
+      'btn-primary'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
+document.querySelectorAll('.admin-restore-review-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const { formId } = btn.dataset;
+    const confirmed = await showConfirmModal(
+      'Restore this review?',
+      'The review will be visible on the listing page again.',
+      'Yes, Restore',
+      'btn-primary'
+    );
+    if (confirmed) submitFormById(formId);
+  });
+});
+
 // ─── Cancel Booking ───────────────────────────────────────────────────────
 document.querySelectorAll('.cancel-booking-btn').forEach(btn => {
   btn.addEventListener('click', async () => {

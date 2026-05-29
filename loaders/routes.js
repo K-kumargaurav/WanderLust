@@ -4,6 +4,7 @@ const reviewRouter          = require("../route/review");
 const userRouter            = require("../route/user");
 const bookingRouter         = require("../route/booking");
 const conversationRouter    = require("../route/conversation");
+const adminRouter           = require("../route/admin.js");
 const bookingController     = require("../Controllers/booking");
 const wrapAsync             = require("../utils/wrapAsync");
 const AppError              = require("../utils/expressErr");
@@ -31,6 +32,7 @@ function setupRoutes(app) {
     );
 
     // ─── Feature routes ──────────────────────────────────────────────────
+    app.use("/admin", adminRouter);
     app.use("/listings", listingRouter);
     app.use("/listings/:id/reviews", reviewRouter);
     app.use("/", userRouter);

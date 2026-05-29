@@ -1,0 +1,272 @@
+<% layout("/layouts/boilerplate") %>
+
+<style>
+  .admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+  .admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--sand);
+    text-decoration: none;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+  }
+  .admin-back:hover { color: var(--terra); }
+
+  .admin-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+  .admin-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-bottom: 1.5rem;
+  }
+
+  .admin-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .admin-search {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    max-width: 380px;
+  }
+  .admin-search .form-control { flex: 1; }
+
+  .admin-table-wrap {
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--white);
+  }
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 800px;
+  }
+  .admin-table thead { background: var(--ivory-dark); }
+  .admin-table th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--charcoal-60);
+    white-space: nowrap;
+  }
+  .admin-table td {
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--charcoal-20);
+    color: var(--charcoal);
+    vertical-align: middle;
+  }
+  .admin-table tbody tr:hover { background: var(--ivory); }
+
+  .admin-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .admin-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    background: var(--charcoal-20);
+    color: var(--charcoal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .admin-avatar--admin { background: var(--terra); color: var(--white); }
+
+  .admin-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+  .admin-badge--role-user  { background: var(--ivory-dark); color: var(--charcoal-60); }
+  .admin-badge--role-admin { background: var(--terra-pale); color: var(--terra); }
+  .admin-badge--active     { background: #e6f4ea; color: #1a7f37; }
+  .admin-badge--banned     { background: #fde8e8; color: #c33; }
+
+  .admin-pagination {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .admin-pagination a,
+  .admin-pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--charcoal-20);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--charcoal);
+    text-decoration: none;
+  }
+  .admin-pagination a:hover { background: var(--ivory); }
+  .admin-pagination .current {
+    background: var(--charcoal);
+    color: var(--white);
+    border-color: var(--charcoal);
+  }
+</style>
+
+<div class="admin-page">
+
+  <a href="/admin" class="admin-back">
+    <i class="fa-solid fa-arrow-left"></i> Back to dashboard
+  </a>
+  <h1 class="admin-title">Users</h1>
+  <p class="admin-subtitle">
+    <%= total.toLocaleString('en-IN') %> user<%= total !== 1 ? 's' : '' %> total
+  </p>
+
+  <!-- Toolbar -->
+  <div class="admin-toolbar">
+    <form action="/admin/users" method="GET" class="admin-search" role="search">
+      <input
+        type="search"
+        name="q"
+        value="<%= search %>"
+        placeholder="Search by username or email…"
+        class="form-control"
+      />
+      <button type="submit" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-magnifying-glass"></i>
+      </button>
+    </form>
+  </div>
+
+  <% if (users.length === 0) { %>
+    <div class="empty-state">
+      <i class="fa-solid fa-user-slash"></i>
+      <h2>No users found</h2>
+      <p>Try a different search term.</p>
+    </div>
+  <% } else { %>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Email</th>
+            <th>Listings</th>
+            <th>Bookings</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th style="min-width:140px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% for (const u of users) { %>
+            <tr>
+              <td>
+                <div class="admin-user-cell">
+                  <div class="admin-avatar <%= u.role === 'admin' ? 'admin-avatar--admin' : '' %>">
+                    <%= (u.username || '?').charAt(0) %>
+                  </div>
+                  <span>@<%= u.username %></span>
+                </div>
+              </td>
+              <td style="color:var(--charcoal-60)"><%= u.email %></td>
+              <td><%= u.listingCount %></td>
+              <td><%= u.bookingCount %></td>
+              <td>
+                <span class="admin-badge admin-badge--role-<%= u.role %>">
+                  <%= u.role %>
+                </span>
+              </td>
+              <td>
+                <% if (u.banned) { %>
+                  <span class="admin-badge admin-badge--banned">Banned</span>
+                <% } else { %>
+                  <span class="admin-badge admin-badge--active">Active</span>
+                <% } %>
+              </td>
+              <td>
+                <% if (u.role === 'admin') { %>
+                  <span style="color:var(--charcoal-60)">&mdash;</span>
+                <% } else if (u.banned) { %>
+                  <form
+                    id="unban-form-<%= u._id %>"
+                    action="/admin/users/<%= u._id %>/unban?_method=PUT"
+                    method="POST"
+                    style="display:inline"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm admin-unban-btn"
+                      data-form-id="unban-form-<%= u._id %>"
+                      data-username="<%= u.username %>"
+                    >
+                      <i class="fa-solid fa-rotate-left"></i> Unban
+                    </button>
+                  </form>
+                <% } else { %>
+                  <form
+                    id="ban-form-<%= u._id %>"
+                    action="/admin/users/<%= u._id %>/ban?_method=PUT"
+                    method="POST"
+                    style="display:inline"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-sm admin-ban-btn"
+                      data-form-id="ban-form-<%= u._id %>"
+                      data-username="<%= u.username %>"
+                    >
+                      <i class="fa-solid fa-ban"></i> Ban
+                    </button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="admin-pagination">
+        <% for (let p = 1; p <= totalPages; p++) { %>
+          <% if (p === page) { %>
+            <span class="current"><%= p %></span>
+          <% } else { %>
+            <a href="?page=<%= p %><%= search ? '&q=' + encodeURIComponent(search) : '' %>"><%= p %></a>
+          <% } %>
+        <% } %>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>

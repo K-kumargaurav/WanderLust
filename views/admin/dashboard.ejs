@@ -1,0 +1,368 @@
+<% layout("/layouts/boilerplate") %>
+
+<%
+  const shortOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+  function fmtShort(d) {
+    return new Date(d).toLocaleDateString('en-IN', shortOpts);
+  }
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+%>
+
+<style>
+  .admin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .admin-title {
+    font-family: var(--font-display);
+    font-size: 2.25rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+
+  .admin-subtitle {
+    font-size: 0.875rem;
+    color: var(--sand);
+    margin-top: 0.25rem;
+  }
+
+  .admin-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── Overview Cards ────────────────────────────────────── */
+  .admin-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .admin-card {
+    background: var(--white);
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    padding: 1.15rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    transition: box-shadow 0.2s;
+  }
+  .admin-card:hover { box-shadow: var(--shadow-sm); }
+
+  .admin-card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.05rem;
+  }
+  .admin-card-icon--users    { background: #e6efff; color: #2046a0; }
+  .admin-card-icon--listings { background: var(--terra-pale); color: var(--terra); }
+  .admin-card-icon--bookings { background: #e6f4ea; color: #1a7f37; }
+  .admin-card-icon--revenue  { background: #fff4e5; color: #b35c00; }
+  .admin-card-icon--reviews  { background: #fde8e8; color: #c33; }
+  .admin-card-icon--chats    { background: #efe4ff; color: #6020a0; }
+
+  .admin-card-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--charcoal-60);
+    margin-bottom: 0.2rem;
+  }
+  .admin-card-value {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    line-height: 1.1;
+  }
+  .admin-card-meta {
+    font-size: 0.72rem;
+    color: var(--sand);
+    margin-top: 0.25rem;
+  }
+  .admin-card-meta--positive { color: #1a7f37; }
+
+  /* ── Two-column section ───────────────────────────────── */
+  .admin-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 768px) {
+    .admin-grid { grid-template-columns: 1fr; }
+    .admin-title { font-size: 1.6rem; }
+  }
+
+  .admin-panel {
+    background: var(--white);
+    border: 1.5px solid var(--charcoal-20);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+  }
+
+  .admin-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .admin-panel-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--charcoal);
+    margin: 0;
+  }
+
+  .admin-panel-link {
+    font-size: 0.78rem;
+    color: var(--terra);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .admin-panel-link:hover { text-decoration: underline; }
+
+  .admin-list-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--charcoal-20);
+  }
+  .admin-list-item:first-of-type { border-top: none; }
+
+  .admin-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: var(--charcoal-20);
+    color: var(--charcoal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .admin-avatar--admin {
+    background: var(--terra);
+    color: var(--white);
+  }
+
+  .admin-list-body { flex: 1; min-width: 0; }
+  .admin-list-title {
+    font-size: 0.9rem;
+    color: var(--charcoal);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-list-sub {
+    font-size: 0.75rem;
+    color: var(--charcoal-60);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-list-right {
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--charcoal);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .admin-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+  }
+  .admin-badge--confirmed { background: #e6f4ea; color: #1a7f37; }
+  .admin-badge--pending   { background: #fff4e5; color: #b35c00; }
+  .admin-badge--cancelled { background: #fde8e8; color: #c33; }
+  .admin-badge--admin     { background: var(--terra-pale); color: var(--terra); }
+</style>
+
+<div class="admin-page">
+
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h1 class="admin-title">Admin Dashboard</h1>
+      <p class="admin-subtitle"><%= today %></p>
+    </div>
+    <div class="admin-nav">
+      <a href="/admin/users"    class="btn btn-outline btn-sm"><i class="fa-solid fa-users"></i> Users</a>
+      <a href="/admin/listings" class="btn btn-outline btn-sm"><i class="fa-solid fa-house"></i> Listings</a>
+      <a href="/admin/bookings" class="btn btn-outline btn-sm"><i class="fa-regular fa-calendar-check"></i> Bookings</a>
+      <a href="/admin/reviews"  class="btn btn-outline btn-sm"><i class="fa-solid fa-star"></i> Reviews</a>
+    </div>
+  </div>
+
+  <!-- Overview Cards -->
+  <div class="admin-cards">
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--users">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Total Users</div>
+        <div class="admin-card-value"><%= totalUsers.toLocaleString('en-IN') %></div>
+        <div class="admin-card-meta admin-card-meta--positive">+<%= newUsersThisMonth %> this month</div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--listings">
+        <i class="fa-solid fa-house"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Total Listings</div>
+        <div class="admin-card-value"><%= totalListings.toLocaleString('en-IN') %></div>
+        <div class="admin-card-meta admin-card-meta--positive">+<%= newListingsThisMonth %> this month</div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--bookings">
+        <i class="fa-regular fa-calendar-check"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Total Bookings</div>
+        <div class="admin-card-value"><%= totalBookings.toLocaleString('en-IN') %></div>
+        <div class="admin-card-meta admin-card-meta--positive">+<%= newBookingsThisMonth %> this month</div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--revenue">
+        <i class="fa-solid fa-indian-rupee-sign"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Platform Revenue</div>
+        <div class="admin-card-value">&#8377;<%= totalRevenue.toLocaleString('en-IN') %></div>
+        <div class="admin-card-meta">Avg &#8377;<%= avgBookingValue.toLocaleString('en-IN') %>/booking</div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--reviews">
+        <i class="fa-solid fa-star"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Total Reviews</div>
+        <div class="admin-card-value"><%= totalReviews.toLocaleString('en-IN') %></div>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="admin-card-icon admin-card-icon--chats">
+        <i class="fa-regular fa-message"></i>
+      </div>
+      <div>
+        <div class="admin-card-label">Conversations</div>
+        <div class="admin-card-value"><%= totalConversations.toLocaleString('en-IN') %></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Two-column activity -->
+  <div class="admin-grid">
+
+    <!-- Recent Bookings -->
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <h2 class="admin-panel-title">Recent Bookings</h2>
+        <a href="/admin/bookings" class="admin-panel-link">View all &rarr;</a>
+      </div>
+
+      <% if (!recentBookings || recentBookings.length === 0) { %>
+        <p style="color:var(--sand);font-size:0.85rem">No bookings yet.</p>
+      <% } else { %>
+        <% for (const b of recentBookings) { %>
+          <div class="admin-list-item">
+            <div class="admin-avatar">
+              <%= (b.guest?.username || '?').charAt(0) %>
+            </div>
+            <div class="admin-list-body">
+              <div class="admin-list-title"><%= b.listing?.title || '(deleted listing)' %></div>
+              <div class="admin-list-sub">@<%= b.guest?.username || 'unknown' %></div>
+            </div>
+            <div class="admin-list-right">
+              &#8377;<%= (b.totalPrice ?? 0).toLocaleString('en-IN') %>
+              <div style="margin-top:0.25rem">
+                <span class="admin-badge admin-badge--<%= b.status %>"><%= b.status %></span>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+
+    <!-- Recent Signups -->
+    <div class="admin-panel">
+      <div class="admin-panel-header">
+        <h2 class="admin-panel-title">Recent Signups</h2>
+        <a href="/admin/users" class="admin-panel-link">View all &rarr;</a>
+      </div>
+
+      <% if (!recentUsers || recentUsers.length === 0) { %>
+        <p style="color:var(--sand);font-size:0.85rem">No users yet.</p>
+      <% } else { %>
+        <% for (const u of recentUsers) { %>
+          <div class="admin-list-item">
+            <div class="admin-avatar <%= u.role === 'admin' ? 'admin-avatar--admin' : '' %>">
+              <%= (u.username || '?').charAt(0) %>
+            </div>
+            <div class="admin-list-body">
+              <div class="admin-list-title">
+                @<%= u.username %>
+                <% if (u.role === 'admin') { %>
+                  <span class="admin-badge admin-badge--admin" style="margin-left:0.3rem">Admin</span>
+                <% } %>
+              </div>
+              <div class="admin-list-sub"><%= u.email %></div>
+            </div>
+            <div class="admin-list-right" style="font-weight:400;color:var(--charcoal-60);font-size:0.72rem">
+              <%= fmtShort(u._id.getTimestamp()) %>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+
+  </div>
+</div>

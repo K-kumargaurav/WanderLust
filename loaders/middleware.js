@@ -154,6 +154,13 @@ function setupMiddleware(app) {
                     if (!result.user) {
                         return done(null, false, result.error);
                     }
+                    // Check if user is banned
+                    if (result.user.banned) {
+                        return done(null, false, {
+                            message: 'Your account has been suspended. ' +
+                                     'Contact support for assistance.'
+                        });
+                    }
                     done(null, result.user);
                 })
                 .catch(done);
@@ -172,6 +179,7 @@ function setupMiddleware(app) {
         res.locals.error    = req.flash("error");
         res.locals.mapToken = config.mapbox.token;
         res.locals.currUser = req.user;
+        res.locals.isAdmin = req.user?.role === 'admin';
         res.locals.stripePublishableKey = process.env.STRIPE_PUBLISHABLE_KEY;
         res.locals.unreadMessages = 0;
 

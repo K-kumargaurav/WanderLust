@@ -127,7 +127,10 @@ async function startConversation(req, res) {
     return req.session.save(() => res.redirect('back'));
   }
 
-  const listing = await Listing.findById(listingId);
+  const listing = await Listing.findOne({
+    _id: listingId,
+    deleted: { $ne: true },
+  });
   if (!listing) {
     req.flash('error', 'Listing not found.');
     return req.session.save(() => res.redirect('/listings'));

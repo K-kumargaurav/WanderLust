@@ -4,12 +4,21 @@
 
   <!-- Header -->
   <div style="margin-bottom:0.25rem">
-    <a href="/listings/<%= listing._id %>"
-       style="font-size:0.8rem;color:var(--sand);text-decoration:none;
-              display:inline-flex;align-items:center;gap:0.3rem">
-      <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i>
-      Back to listing
-    </a>
+    <% if (isAdmin) { %>
+      <a href="/admin/listings" style="font-size:0.8rem;color:var(--sand);
+         text-decoration:none;display:inline-flex;align-items:center;
+         gap:0.3rem">
+        <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i>
+        Admin — Listings
+      </a>
+    <% } else { %>
+      <a href="/listings/<%= listing._id %>" style="font-size:0.8rem;
+         color:var(--sand);text-decoration:none;display:inline-flex;
+         align-items:center;gap:0.3rem">
+        <i class="fa-solid fa-arrow-left" style="font-size:0.7rem"></i>
+        Back to listing
+      </a>
+    <% } %>
   </div>
 
   <div style="display:flex;align-items:flex-start;

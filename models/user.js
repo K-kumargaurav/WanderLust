@@ -20,6 +20,15 @@ const userSchema = new Schema({
     ],
     resetPasswordToken: String,
     resetPasswordExpires: Date,
+    role: {
+        type:    String,
+        enum:    ['user', 'admin'],
+        default: 'user',
+    },
+    banned: {
+        type:    Boolean,
+        default: false,
+    },
 });
 
 userSchema.plugin(passportLocalMongoose, {

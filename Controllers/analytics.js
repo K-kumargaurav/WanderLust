@@ -11,16 +11,24 @@ const { BOOKING_STATUS } = require("../utils/constants.js");
  * @access Listing owner only
  */
 async function renderAnalytics(req, res) {
+    console.log('[analytics] req.user:', {
+        id:   req.user?._id,
+        role: req.user?.role,
+    });
+
     const { id } = req.params;
 
-    const listing = await Listing.findById(id);
+    const listing = await Listing.findOne({ _id: id, deleted: { $ne: true } });
     if (!listing) {
         req.flash("error", "Listing not found.");
         return req.session.save(() => res.redirect("/listings"));
     }
 
-    // Ownership check
-    if (!listing.owner.equals(req.user._id)) {
+    // Ownership check (admins can view any listing's analytics)
+    const isOwner = listing.owner.equals(req.user._id);
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
         req.flash("error", "You do not have permission to view this.");
         return req.session.save(() => res.redirect(`/listings/${id}`));
     }
@@ -110,6 +118,7 @@ async function renderAnalytics(req, res) {
 
     res.render("listings/analytics.ejs", {
         listing,
+        isAdmin,
         // Overview
         totalViews:       listing.viewCount || 0,
         wishlistSaves:    listing.wishlistCount || 0,
